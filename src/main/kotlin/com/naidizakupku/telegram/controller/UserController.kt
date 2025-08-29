@@ -20,10 +20,7 @@ class UserController(
     @PostMapping
     suspend fun createUser(@RequestBody request: CreateUserRequest): ResponseEntity<User> {
         val user = userService.createUser(
-            telegramId = request.telegramId,
-            username = request.username,
-            firstName = request.firstName,
-            lastName = request.lastName
+            telegramId = request.telegramId
         )
         return ResponseEntity.ok(user)
     }
@@ -63,43 +60,12 @@ class UserController(
         }
     }
     
-    /**
-     * Обновить пользователя
-     */
-    @PutMapping("/{telegramId}")
-    suspend fun updateUser(
-        @PathVariable telegramId: Long,
-        @RequestBody request: UpdateUserRequest
-    ): ResponseEntity<User> {
-        val existingUser = userService.findByTelegramId(telegramId) ?: return ResponseEntity.notFound().build()
-        
-        val updatedUser = existingUser.copy(
-            username = request.username ?: existingUser.username,
-            firstName = request.firstName,
-            lastName = request.lastName
-        )
-        
-        val savedUser = userService.updateUser(updatedUser)
-        return ResponseEntity.ok(savedUser)
-    }
-}
 
 /**
  * DTO для создания пользователя
  */
 data class CreateUserRequest(
-    val telegramId: Long,
-    val username: String,
-    val firstName: String? = null,
-    val lastName: String? = null
-)
+    val telegramId: Long
+)}
 
-/**
- * DTO для обновления пользователя
- */
-data class UpdateUserRequest(
-    val username: String? = null,
-    val firstName: String? = null,
-    val lastName: String? = null
-)
 

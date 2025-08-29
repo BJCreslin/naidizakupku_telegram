@@ -31,7 +31,7 @@ class UserServiceTest : FunSpec({
             coEvery { userRepository.save(any()) } returns expectedUser
 
             // When
-            val result = userService.createUser(telegramId, username, firstName, lastName)
+            val result = userService.createUser(telegramId)
 
             // Then
             result shouldNotBe null

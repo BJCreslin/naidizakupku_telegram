@@ -20,9 +20,6 @@ class UserService(
      */
     suspend fun createUser(
         telegramId: Long,
-        username: String,
-        firstName: String? = null,
-        lastName: String? = null
     ): User {
         if (userRepository.existsByTelegramId(telegramId)) {
             throw IllegalArgumentException("Пользователь с Telegram ID $telegramId уже существует")
@@ -30,9 +27,6 @@ class UserService(
         
         val user = User(
             telegramId = telegramId,
-            username = username,
-            firstName = firstName,
-            lastName = lastName
         )
         
         return userRepository.save(user)
