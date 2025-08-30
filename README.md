@@ -116,7 +116,7 @@ docker-compose up -d
 ### Сборка образа
 
 ```bash
-docker build -t telegram-app .
+docker build -t naidizakupku-telegram .
 ```
 
 ### Запуск контейнера
@@ -129,7 +129,7 @@ docker run -d \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=password \
   -e KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
-  telegram-app
+  naidizakupku-telegram
 ```
 
 ## Миграции базы данных

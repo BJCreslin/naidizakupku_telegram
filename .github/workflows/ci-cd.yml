@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  DOCKER_IMAGE: ghcr.io/${{ github.repository }}/telegram-app
+  DOCKER_IMAGE: ghcr.io/${{ github.repository_owner }}/naidizakupku-telegram
   DOCKER_TAG: ${{ github.sha }}
 
 permissions:
