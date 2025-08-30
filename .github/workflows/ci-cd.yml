@@ -103,6 +103,11 @@ jobs:
     env:
       DOCKER_IMAGE: ghcr.io/bjcreslin/naidizakupku-telegram
       DOCKER_TAG: ${{ github.sha }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
     steps:
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
@@ -111,32 +116,33 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: DOCKER_IMAGE,DOCKER_TAG,GHCR_TOKEN,POSTGRES_URL,POSTGRES_USER,POSTGRES_PASSWORD,KAFKA_BOOTSTRAP_SERVERS
           script: |
             # Останавливаю старый контейнер
             docker stop telegram-app || true
             docker rm telegram-app || true
             
             # Удаляю старый образ
-            docker rmi ${{ env.DOCKER_IMAGE }}:latest || true
+            docker rmi $DOCKER_IMAGE:latest || true
             
             # Авторизуюсь в GitHub Container Registry
-            echo '${{ secrets.GHCR_TOKEN }}' | docker login -u '${{ github.actor }}' --password-stdin ghcr.io
+            echo '$GHCR_TOKEN' | docker login -u '${{ github.actor }}' --password-stdin ghcr.io
             
             # Скачиваю новый образ
-            docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
-            docker tag ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} ${{ env.DOCKER_IMAGE }}:latest
+            docker pull $DOCKER_IMAGE:$DOCKER_TAG
+            docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
             
             # Запускаю новый контейнер
             docker run -d \
               --name telegram-app \
               --restart unless-stopped \
               -p 8080:8080 \
-              -e POSTGRES_URL='${{ secrets.POSTGRES_URL }}' \
-              -e POSTGRES_USER='${{ secrets.POSTGRES_USER }}' \
-              -e POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' \
-              -e KAFKA_BOOTSTRAP_SERVERS='${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}' \
+              -e POSTGRES_URL='$POSTGRES_URL' \
+              -e POSTGRES_USER='$POSTGRES_USER' \
+              -e POSTGRES_PASSWORD='$POSTGRES_PASSWORD' \
+              -e KAFKA_BOOTSTRAP_SERVERS='$KAFKA_BOOTSTRAP_SERVERS' \
               -v /opt/telegram-app/logs:/app/logs \
-              ${{ env.DOCKER_IMAGE }}:latest
+              $DOCKER_IMAGE:latest
             
             # Проверяю здоровье приложения
             sleep 30
