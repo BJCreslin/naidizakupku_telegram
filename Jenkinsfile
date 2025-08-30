@@ -2,11 +2,15 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_IMAGE = 'naidizakupku/telegram-app'
+        DOCKER_IMAGE = 'registry.gitflic.ru/project/bjcreslin/naidizakupku_telegram/telegram-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         REMOTE_HOST = 'your-ubuntu-server'
         REMOTE_USER = 'deploy'
         REMOTE_PATH = '/opt/telegram-app'
+//         GITFLIC_USER = credentials('gitflic-registry').username
+        GITFLIC_USER = "${env.GITFLIC_USER}"
+        GITFLIC_PASS = "${env.GITFLIC_PASS}"
+//         GITFLIC_PASS = credentials('gitflic-registry').password
     }
     
     stages {
@@ -79,16 +83,12 @@ pipeline {
             }
             steps {
                 script {
-                    // Логинимся в Docker registry
-                    withCredentials([usernamePassword(credentialsId: 'docker-registry', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                    }
+                    // Логинимся в GitFlic registry
+                    sh "echo ${GITFLIC_PASS} | docker login -u ${GITFLIC_USER} --password-stdin registry.gitflic.ru"
                     
                     // Пушим образы
-                    docker.withRegistry('https://registry.example.com', 'docker-registry') {
-                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
-                        docker.image("${DOCKER_IMAGE}:latest").push()
-                    }
+                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
@@ -110,8 +110,8 @@ pipeline {
                                 # Удаляем старый образ
                                 docker rmi ${DOCKER_IMAGE}:latest || true
                                 
-                                # Логинимся в registry
-                                echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                                # Логинимся в GitFlic registry
+                                echo ${GITFLIC_PASS} | docker login -u ${GITFLIC_USER} --password-stdin registry.gitflic.ru
                                 
                                 # Скачиваем новый образ
                                 docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
