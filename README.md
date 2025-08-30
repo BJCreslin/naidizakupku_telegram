@@ -1,198 +1,157 @@
-# Naidizakupku Telegram Application
+# Telegram Bot Application
 
-Spring Boot приложение на Kotlin для работы с Telegram API, включающее CI/CD pipeline с Jenkins и Docker деплоем.
+Spring Boot приложение для Telegram бота на Kotlin.
 
 ## Технологии
 
-- **Kotlin 2.0** - основной язык разработки
-- **Spring Boot 3.3** - фреймворк
-- **JDK 21** - Java runtime
-- **Gradle Kotlin DSL** - система сборки
-- **PostgreSQL** - база данных
-- **Apache Kafka** - обмен сообщениями
-- **Liquibase** - миграции БД
-- **Docker** - контейнеризация
-- **Jenkins** - CI/CD
-- **Kotest + Mockk** - тестирование
+- **Kotlin 2.0**
+- **Spring Boot 3.3**
+- **JDK 21**
+- **Gradle (Kotlin DSL)**
+- **PostgreSQL**
+- **Apache Kafka**
+- **Docker**
+- **GitHub Actions**
 
-## Архитектура
+## Структура проекта
 
 ```
-src/main/kotlin/com/naidizakupku/telegram/
-├── TelegramApplication.kt          # Главный класс приложения
-├── controller/                     # REST контроллеры
-│   └── UserController.kt
-├── service/                        # Бизнес-логика
-│   └── UserService.kt
-├── repository/                     # Доступ к данным
-│   └── UserRepository.kt
-├── domain/                         # Доменные модели
-│   └── User.kt
-└── config/                         # Конфигурации
-    ├── DatabaseConfig.kt
-    └── KafkaConfig.kt
+src/
+├── main/
+│   ├── kotlin/
+│   │   └── com/naidizakupku/telegram/
+│   │       ├── config/          # Конфигурации
+│   │       ├── controller/      # REST контроллеры
+│   │       ├── domain/          # Доменные модели
+│   │       ├── repository/      # Репозитории
+│   │       ├── service/         # Бизнес-логика
+│   │       └── TelegramApplication.kt
+│   └── resources/
+│       ├── application.yml      # Основная конфигурация
+│       └── db/
+│           └── changelog/       # Миграции Liquibase
+└── test/
+    └── kotlin/                  # Тесты
 ```
 
-## Быстрый старт
+## Локальная разработка
 
-### Локальная разработка
+### Требования
 
-1. **Клонируйте репозиторий:**
+- JDK 21
+- Docker
+- Docker Compose
+
+### Запуск
+
+1. Клонируй репозиторий:
 ```bash
 git clone <repository-url>
 cd naidizakupku_telegram
 ```
 
-2. **Запустите зависимости через Docker Compose:**
+2. Запусти зависимости через Docker Compose:
 ```bash
-docker-compose up -d postgres kafka zookeeper
+docker-compose up -d
 ```
 
-3. **Соберите и запустите приложение:**
+3. Запусти приложение:
 ```bash
 ./gradlew bootRun
 ```
 
-### Сборка и тестирование
+### Тестирование
 
 ```bash
-# Сборка
-./gradlew build
-
-# Тесты
 ./gradlew test
-
-# Запуск с профилем
-./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
-
-### Docker
-
-```bash
-# Сборка образа
-docker build -t naidizakupku/telegram-app .
-
-# Запуск с docker-compose
-docker-compose up -d
-
-# Проверка логов
-docker-compose logs -f app
-```
-
-## API Endpoints
-
-### Пользователи
-
-- `POST /api/users` - Создать пользователя
-- `GET /api/users/{telegramId}` - Получить пользователя
-- `GET /api/users` - Получить всех активных пользователей
-- `PUT /api/users/{telegramId}` - Обновить пользователя
-- `DELETE /api/users/{telegramId}` - Деактивировать пользователя
-
-### Health Check
-
-- `GET /actuator/health` - Проверка здоровья приложения
-- `GET /actuator/info` - Информация о приложении
-- `GET /actuator/metrics` - Метрики
-
-## Конфигурация
-
-### Переменные окружения
-
-```bash
-# База данных
-POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=password
-
-# Kafka
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-KAFKA_USER=your_kafka_user
-KAFKA_PASSWORD=your_kafka_password
-
-# Приложение
-SERVER_PORT=8080
-```
-
-### Профили
-
-- `dev` - разработка (H2, локальный Kafka)
-- `prod` - продакшн (PostgreSQL, внешний Kafka)
 
 ## CI/CD Pipeline
 
-### Jenkins Pipeline Stages
+Проект использует GitHub Actions для автоматизации CI/CD.
 
-1. **Checkout** - Клонирование кода
-2. **Build** - Сборка с Gradle
-3. **Test** - Запуск тестов
-4. **SonarQube Analysis** - Анализ кода
-5. **Build Docker Image** - Сборка Docker образа
-6. **Push Docker Image** - Пуш в registry
-7. **Deploy to Production** - Деплой на Ubuntu сервер
+### Workflow
 
-### Настройка Jenkins
+1. **Test** - Запуск тестов
+2. **Build** - Сборка JAR файла
+3. **Docker Build** - Сборка Docker образа (только для main)
+4. **Deploy** - Деплой на сервер (только для main)
 
-1. **Credentials:**
-   - `docker-registry` - логин/пароль для Docker registry
-   - `ssh-key` - SSH ключ для доступа к серверу
+### Настройка Secrets
 
-2. **Переменные окружения:**
-   - `REMOTE_HOST` - IP адрес Ubuntu сервера
-   - `REMOTE_USER` - пользователь для деплоя
-   - `REMOTE_PATH` - путь на сервере
+Добавь следующие secrets в GitHub репозитории (Settings → Secrets and variables → Actions):
 
-### Деплой на Ubuntu 20.04
+#### Обязательные:
+- `SERVER_IP` - IP адрес сервера
+- `SSH_PORT` - SSH порт (обычно 22)
+- `SERVER_USER` - пользователь сервера
+- `SSH_KEY` - приватный SSH ключ
+- `GHCR_TOKEN` - Personal Access Token с правами `write:packages`
 
-1. **Установите Docker:**
+#### База данных:
+- `POSTGRES_URL` - URL PostgreSQL
+- `POSTGRES_USER` - пользователь PostgreSQL
+- `POSTGRES_PASSWORD` - пароль PostgreSQL
+
+#### Kafka:
+- `KAFKA_BOOTSTRAP_SERVERS` - адреса Kafka серверов
+
+### Создание Personal Access Token
+
+1. Перейди в GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Создай новый токен с правами:
+   - `repo` (полный доступ к репозиторию)
+   - `write:packages` (запись в GitHub Container Registry)
+3. Сохрани токен как `GHCR_TOKEN` в secrets
+
+### Environment
+
+Создай environment `production` в GitHub:
+1. Settings → Environments → New environment
+2. Название: `production`
+3. Добавь все secrets выше
+
+## Docker
+
+### Сборка образа
+
 ```bash
-sudo apt update
-sudo apt install docker.io docker-compose
-sudo usermod -aG docker $USER
+docker build -t telegram-app .
 ```
 
-2. **Создайте пользователя deploy:**
+### Запуск контейнера
+
 ```bash
-sudo useradd -m -s /bin/bash deploy
-sudo usermod -aG docker deploy
+docker run -d \
+  --name telegram-app \
+  -p 8080:8080 \
+  -e POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
+  telegram-app
 ```
 
-3. **Настройте SSH доступ:**
-```bash
-sudo mkdir -p /home/deploy/.ssh
-sudo cp ~/.ssh/authorized_keys /home/deploy/.ssh/
-sudo chown -R deploy:deploy /home/deploy/.ssh
-```
+## Миграции базы данных
+
+Миграции управляются через Liquibase и находятся в `src/main/resources/db/changelog/`.
+
+### Создание новой миграции
+
+1. Создай новый XML файл в `src/main/resources/db/changelog/changes/`
+2. Добавь ссылку в `db.changelog-master.xml`
+3. При запуске приложения миграции применятся автоматически
+
+## Логирование
+
+Логи сохраняются в `/opt/telegram-app/logs/` при запуске в Docker.
 
 ## Мониторинг
 
-### Логи
-
-- Файловые логи: `logs/application.log`
-- Docker логи: `docker-compose logs -f app`
-
-### Метрики
-
-- Prometheus: `http://localhost:8080/actuator/prometheus`
-- Health check: `http://localhost:8080/actuator/health`
-
-## Разработка
-
-### Добавление новой функциональности
-
-1. Создайте доменную модель в `domain/`
-2. Добавьте репозиторий в `repository/`
-3. Реализуйте сервис в `service/`
-4. Создайте контроллер в `controller/`
-5. Напишите тесты в `src/test/kotlin/`
-6. Добавьте миграцию в `src/main/resources/db/changelog/`
-
-### Стиль кода
-
-- Следуйте официальному гайдлайну JetBrains для Kotlin
-- Используйте KDoc для публичных методов
-- Пишите тесты для всех публичных методов
-- Используйте корутины для асинхронных операций
+Приложение предоставляет health check endpoint:
+```
+GET /actuator/health
+```
 
 ## Лицензия
 
