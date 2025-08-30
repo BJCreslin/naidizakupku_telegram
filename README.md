@@ -85,7 +85,7 @@ docker-compose up -d
 - `SERVER_IP` - IP адрес сервера
 - `SSH_PORT` - SSH порт (обычно 22)
 - `SERVER_USER` - пользователь сервера
-- `SSH_KEY` - приватный SSH ключ
+- `SSH_KEY` - приватный SSH ключ (включая `-----BEGIN OPENSSH PRIVATE KEY-----` и `-----END OPENSSH PRIVATE KEY-----`)
 - `GHCR_TOKEN` - Personal Access Token с правами `write:packages`
 
 #### База данных:
@@ -103,6 +103,25 @@ docker-compose up -d
    - `repo` (полный доступ к репозиторию)
    - `write:packages` (запись в GitHub Container Registry)
 3. Сохрани токен как `GHCR_TOKEN` в secrets
+
+### Создание SSH ключа
+
+1. Создай SSH ключ на локальной машине:
+```bash
+ssh-keygen -t ed25519 -C "github-actions@example.com"
+```
+
+2. Добавь публичный ключ на сервер:
+```bash
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server-ip
+```
+
+3. Скопируй содержимое приватного ключа (включая заголовки):
+```bash
+cat ~/.ssh/id_ed25519
+```
+
+4. Сохрани как `SSH_KEY` в GitHub secrets
 
 ### Environment
 
