@@ -18,7 +18,7 @@ COPY src src
 RUN gradle build --no-daemon
 
 # Второй этап - создание runtime образа
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -27,7 +27,7 @@ WORKDIR /app
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Копируем собранный JAR файл
-COPY --from=build /app/build/libs/app.jar app.jar
+COPY --from=build /app/build/libs/*.jar app.jar
 
 # Создаем директорию для логов
 RUN mkdir -p /app/logs && chown -R appuser:appuser /app
