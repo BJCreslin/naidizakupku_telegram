@@ -169,8 +169,8 @@ jobs:
               -e POSTGRES_USER="$POSTGRES_USER" \
               -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
               -e SPRING_PROFILES_ACTIVE=prod \
-              -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
-              -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}" \
+              -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}"  \
+              -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}"  \
               -v /opt/telegram-app/logs:/app/logs \
               $DOCKER_IMAGE:latest
             
