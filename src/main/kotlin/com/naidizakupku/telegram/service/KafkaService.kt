@@ -2,6 +2,7 @@ package com.naidizakupku.telegram.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Service
@@ -11,6 +12,7 @@ import java.util.concurrent.CompletableFuture
  * Сервис для работы с Kafka
  */
 @Service
+@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"])
 class KafkaService(
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper

@@ -2,6 +2,7 @@ package com.naidizakupku.telegram.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.kafka.support.KafkaHeaders
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service
  * Сервис для потребления сообщений из Kafka
  */
 @Service
+@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"])
 class KafkaConsumerService(
     private val objectMapper: ObjectMapper
 ) {
@@ -24,7 +26,7 @@ class KafkaConsumerService(
      */
     @KafkaListener(
         topics = ["user-events"],
-        groupId = "\${spring.kafka.consumer.group-id}",
+        groupId = "\${spring.kafka.consumer.group-id:naidizakupku-telegram-consumer}",
         containerFactory = "kafkaListenerContainerFactory"
     )
     fun handleUserEvent(
@@ -66,7 +68,7 @@ class KafkaConsumerService(
      */
     @KafkaListener(
         topics = ["notifications"],
-        groupId = "\${spring.kafka.consumer.group-id}",
+        groupId = "\${spring.kafka.consumer.group-id:naidizakupku-telegram-consumer}",
         containerFactory = "kafkaListenerContainerFactory"
     )
     fun handleNotification(

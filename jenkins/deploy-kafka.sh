@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Скрипт для деплоя Kafka на VPS (PostgreSQL установлен на VPS, Kafka без Zookeeper)
+# Скрипт для деплоя Kafka на VPS (PostgreSQL установлен на VPS, Kafka в Docker)
 # Использование: ./deploy-kafka.sh
 
 set -e
@@ -10,7 +10,7 @@ VPS_USER="root"
 PROJECT_DIR="/opt/naidizakupku_telegram"
 DOCKER_COMPOSE_FILE="docker-compose.prod.yml"
 
-echo "🚀 Начинаем деплой Kafka на VPS $VPS_IP (PostgreSQL на VPS, Kafka без Zookeeper)..."
+echo "🚀 Начинаем деплой Kafka на VPS $VPS_IP (PostgreSQL на VPS, Kafka в Docker)..."
 
 # Проверяем подключение к VPS
 echo "📡 Проверяем подключение к VPS..."
@@ -42,12 +42,12 @@ ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE
 echo "🗑️ Удаляем старые образы..."
 ssh $VPS_USER@$VPS_IP "docker system prune -f"
 
-# Запускаем новые контейнеры
+# Запускаем Kafka и связанные сервисы
 echo "🚀 Запускаем Kafka и связанные сервисы..."
-ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE up -d"
+ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE up -d kafka kafka-ui"
 
-# Ждем запуска сервисов
-echo "⏳ Ждем запуска сервисов..."
+# Ждем запуска Kafka
+echo "⏳ Ждем запуска Kafka..."
 sleep 30
 
 # Проверяем статус контейнеров
@@ -97,3 +97,4 @@ echo "   - PostgreSQL должен быть установлен и настро
 echo "   - База данных telegram_db должна быть создана"
 echo "   - Пользователь postgres должен иметь доступ к базе"
 echo "   - Порт 5432 должен быть открыт для подключения из Docker"
+echo "   - Kafka запущена в Docker и доступна на порту 9092"
