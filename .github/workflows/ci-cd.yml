@@ -107,7 +107,6 @@ jobs:
       POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
     steps:
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
@@ -116,7 +115,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: DOCKER_IMAGE,DOCKER_TAG,GHCR_TOKEN,POSTGRES_URL,POSTGRES_USER,POSTGRES_PASSWORD,KAFKA_BOOTSTRAP_SERVERS
+          envs: DOCKER_IMAGE,DOCKER_TAG,GHCR_TOKEN,POSTGRES_URL,POSTGRES_USER,POSTGRES_PASSWORD
           script: |
             # Останавливаю старый контейнер
             docker stop telegram-app || true
@@ -140,12 +139,29 @@ jobs:
               -e POSTGRES_URL='$POSTGRES_URL' \
               -e POSTGRES_USER='$POSTGRES_USER' \
               -e POSTGRES_PASSWORD='$POSTGRES_PASSWORD' \
-              -e KAFKA_BOOTSTRAP_SERVERS='$KAFKA_BOOTSTRAP_SERVERS' \
+              -e SPRING_PROFILES_ACTIVE=prod \
               -v /opt/telegram-app/logs:/app/logs \
               $DOCKER_IMAGE:latest
             
-            # Проверяю здоровье приложения
-            sleep 30
-            curl -f http://localhost:8080/actuator/health || exit 1
+            # Ждем запуска приложения
+            echo "Waiting for application to start..."
+            sleep 60
+            
+            # Проверяем здоровье приложения
+            echo "Checking application health..."
+            for i in {1..10}; do
+                if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+                    echo "Application is healthy!"
+                    break
+                else
+                    echo "Health check attempt $i failed, waiting..."
+                    sleep 10
+                fi
+                
+                if [ $i -eq 10 ]; then
+                    echo "Application failed to start properly!"
+                    exit 1
+                fi
+            done
             
             echo 'Деплой завершен успешно'

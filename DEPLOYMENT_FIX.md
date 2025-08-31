@@ -45,12 +45,11 @@ logging:
 
 ### 3. Обновление скрипта деплоя
 
-**Изменения в `jenkins/deploy.sh`**:
+**Изменения в `.github/workflows/ci-cd.yml`**:
 
 1. Добавлен профиль `prod`:
 ```bash
-environment:
-  - SPRING_PROFILES_ACTIVE=prod
+-e SPRING_PROFILES_ACTIVE=prod \
 ```
 
 2. Увеличено время ожидания:
@@ -58,15 +57,25 @@ environment:
 sleep 60  # вместо 30
 ```
 
-3. Улучшен healthcheck:
+3. Улучшен healthcheck с повторными попытками:
 ```bash
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-  interval: 30s
-  timeout: 10s
-  retries: 5  # вместо 3
-  start_period: 60s  # вместо 40s
+for i in {1..10}; do
+    if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+        echo "Application is healthy!"
+        break
+    else
+        echo "Health check attempt $i failed, waiting..."
+        sleep 10
+    fi
+    
+    if [ $i -eq 10 ]; then
+        echo "Application failed to start properly!"
+        exit 1
+    fi
+done
 ```
+
+4. Удалена переменная `KAFKA_BOOTSTRAP_SERVERS` из environment и envs.
 
 ### 4. Исправление репозитория
 
@@ -109,10 +118,18 @@ curl http://localhost:8081/actuator/health
 
 После внесения исправлений:
 - ✅ Приложение успешно запускается с профилем `prod`
-- ✅ Health endpoint возвращает статус 200
-- ✅ Kafka отключен в продакшене
+- ✅ Kafka отключен в продакшене через `autoconfigure.exclude`
 - ✅ Переменные окружения корректно подставляются
-- ✅ Увеличено время ожидания для стабильного деплоя
+- ✅ Увеличено время ожидания для стабильного деплоя (60 секунд)
+- ✅ Добавлены повторные попытки health check (10 попыток)
+- ✅ Обновлен GitHub Actions workflow с правильными переменными окружения
+
+## Ключевые изменения
+
+1. **Создан профиль `prod`** - отключает Kafka автоконфигурацию
+2. **Обновлен workflow** - использует `SPRING_PROFILES_ACTIVE=prod` вместо `KAFKA_BOOTSTRAP_SERVERS`
+3. **Улучшен health check** - 10 попыток с интервалом 10 секунд
+4. **Увеличено время ожидания** - 60 секунд для полного запуска приложения
 
 ## Следующие шаги
 
