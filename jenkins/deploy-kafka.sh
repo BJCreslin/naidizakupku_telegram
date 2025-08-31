@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Скрипт для деплоя Kafka на VPS (PostgreSQL установлен на VPS, Kafka без Zookeeper)
+# Использование: ./deploy-kafka.sh
+
+set -e
+
+VPS_IP="5.44.40.79"
+VPS_USER="root"
+PROJECT_DIR="/opt/naidizakupku_telegram"
+DOCKER_COMPOSE_FILE="docker-compose.prod.yml"
+
+echo "🚀 Начинаем деплой Kafka на VPS $VPS_IP (PostgreSQL на VPS, Kafka без Zookeeper)..."
+
+# Проверяем подключение к VPS
+echo "📡 Проверяем подключение к VPS..."
+ssh -o ConnectTimeout=10 $VPS_USER@$VPS_IP "echo 'Подключение успешно'"
+
+# Проверяем PostgreSQL на VPS
+echo "🐘 Проверяем PostgreSQL на VPS..."
+ssh $VPS_USER@$VPS_IP "sudo systemctl status postgresql || echo 'PostgreSQL не найден, нужно установить'"
+
+# Создаем директорию проекта если не существует
+echo "📁 Создаем директорию проекта..."
+ssh $VPS_USER@$VPS_IP "mkdir -p $PROJECT_DIR"
+
+# Копируем docker-compose файл
+echo "📋 Копируем docker-compose.prod.yml..."
+scp docker-compose.prod.yml $VPS_USER@$VPS_IP:$PROJECT_DIR/
+
+# Копируем .env файл если существует
+if [ -f .env ]; then
+    echo "🔐 Копируем .env файл..."
+    scp .env $VPS_USER@$VPS_IP:$PROJECT_DIR/
+fi
+
+# Останавливаем старые контейнеры
+echo "🛑 Останавливаем старые контейнеры..."
+ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE down --remove-orphans || true"
+
+# Удаляем старые образы
+echo "🗑️ Удаляем старые образы..."
+ssh $VPS_USER@$VPS_IP "docker system prune -f"
+
+# Запускаем новые контейнеры
+echo "🚀 Запускаем Kafka и связанные сервисы..."
+ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE up -d"
+
+# Ждем запуска сервисов
+echo "⏳ Ждем запуска сервисов..."
+sleep 30
+
+# Проверяем статус контейнеров
+echo "🔍 Проверяем статус контейнеров..."
+ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE ps"
+
+# Проверяем здоровье Kafka
+echo "💚 Проверяем здоровье Kafka..."
+ssh $VPS_USER@$VPS_IP "docker exec telegram_kafka_prod kafka-topics --bootstrap-server localhost:9092 --list || echo 'Kafka еще не готова'"
+
+# Настраиваем автозапуск Docker при перезагрузке
+echo "⚙️ Настраиваем автозапуск Docker..."
+ssh $VPS_USER@$VPS_IP "systemctl enable docker"
+
+# Создаем systemd сервис для автозапуска проекта
+echo "🔧 Создаем systemd сервис для автозапуска..."
+ssh $VPS_USER@$VPS_IP "cat > /etc/systemd/system/naidizakupku-telegram.service << 'EOF'
+[Unit]
+Description=Naidizakupku Telegram with Kafka (PostgreSQL on VPS)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$PROJECT_DIR
+ExecStart=/usr/local/bin/docker-compose -f $DOCKER_COMPOSE_FILE up -d
+ExecStop=/usr/local/bin/docker-compose -f $DOCKER_COMPOSE_FILE down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+
+# Включаем автозапуск
+echo "✅ Включаем автозапуск сервиса..."
+ssh $VPS_USER@$VPS_IP "systemctl daemon-reload && systemctl enable naidizakupku-telegram.service"
+
+echo "🎉 Деплой завершен!"
+echo "📊 Kafka UI доступен по адресу: http://$VPS_IP:8081"
+echo "🔌 Kafka доступна по адресу: $VPS_IP:9092"
+echo "🐘 PostgreSQL доступен по адресу: $VPS_IP:5432"
+echo "📝 Логи: ssh $VPS_USER@$VPS_IP 'docker-compose -f $PROJECT_DIR/$DOCKER_COMPOSE_FILE logs -f'"
+echo ""
+echo "⚠️  Важно:"
+echo "   - PostgreSQL должен быть установлен и настроен на VPS"
+echo "   - База данных telegram_db должна быть создана"
+echo "   - Пользователь postgres должен иметь доступ к базе"
+echo "   - Порт 5432 должен быть открыт для подключения из Docker"

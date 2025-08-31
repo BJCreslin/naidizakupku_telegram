@@ -1,15 +1,17 @@
 package com.naidizakupku.telegram.config
 
 import org.apache.kafka.clients.admin.NewTopic
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.config.TopicBuilder
-import org.springframework.kafka.core.DefaultKafkaProducerFactory
-import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.core.ProducerFactory
+import org.springframework.kafka.core.*
+import org.springframework.kafka.listener.ContainerProperties
 
 /**
  * Конфигурация Kafka
@@ -25,6 +27,9 @@ class KafkaConfig {
     
     @Value("\${spring.kafka.security.password:}")
     private lateinit var password: String
+    
+    @Value("\${spring.kafka.consumer.group-id}")
+    private lateinit var groupId: String
     
     /**
      * Конфигурация Producer Factory
@@ -47,11 +52,50 @@ class KafkaConfig {
     }
     
     /**
+     * Конфигурация Consumer Factory
+     */
+    @Bean
+    fun consumerFactory(): ConsumerFactory<String, String> {
+        val configProps = mutableMapOf<String, Any>()
+        configProps[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServers
+        configProps[ConsumerConfig.GROUP_ID_CONFIG] = groupId
+        configProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
+        configProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
+        configProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
+        configProps[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = "true"
+        configProps[ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG] = "1000"
+        configProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = "500"
+        configProps[ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG] = "30000"
+        configProps[ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG] = "3000"
+        
+        // Настройки безопасности если указаны
+        if (username.isNotEmpty() && password.isNotEmpty()) {
+            configProps["security.protocol"] = "SASL_SSL"
+            configProps["sasl.mechanism"] = "PLAIN"
+            configProps["sasl.jaas.config"] = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$username\" password=\"$password\";"
+        }
+        
+        return DefaultKafkaConsumerFactory(configProps)
+    }
+    
+    /**
      * Kafka Template
      */
     @Bean
     fun kafkaTemplate(): KafkaTemplate<String, String> {
         return KafkaTemplate(producerFactory())
+    }
+    
+    /**
+     * Kafka Listener Container Factory
+     */
+    @Bean
+    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, String> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
+        factory.consumerFactory = consumerFactory()
+        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
+        factory.setConcurrency(3)
+        return factory
     }
     
     /**

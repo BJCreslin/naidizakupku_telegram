@@ -1,71 +1,116 @@
 package com.naidizakupku.telegram.controller
 
 import com.naidizakupku.telegram.domain.User
+import com.naidizakupku.telegram.service.KafkaService
 import com.naidizakupku.telegram.service.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 /**
- * REST контроллер для работы с пользователями
+ * Контроллер для работы с пользователями
  */
 @RestController
 @RequestMapping("/api/users")
 class UserController(
-    private val userService: UserService
+    private val userService: UserService,
+    private val kafkaService: KafkaService
 ) {
     
     /**
-     * Создать нового пользователя
+     * Создание нового пользователя
      */
     @PostMapping
-    suspend fun createUser(@RequestBody request: CreateUserRequest): ResponseEntity<User> {
-        val user = userService.createUser(
-            telegramId = request.telegramId
+    suspend fun createUser(@RequestBody user: User): ResponseEntity<User> {
+        val createdUser = userService.createUser(user)
+        
+        // Отправляем событие в Kafka
+        kafkaService.sendUserEvent(
+            userId = createdUser.id!!,
+            eventType = "user_registered",
+            data = mapOf(
+                "username" to createdUser.username,
+                "email" to (createdUser.email ?: ""),
+                "telegramId" to (createdUser.telegramId?.toString() ?: "")
+            )
         )
+        
+        return ResponseEntity.ok(createdUser)
+    }
+    
+    /**
+     * Получение пользователя по ID
+     */
+    @GetMapping("/{id}")
+    suspend fun getUserById(@PathVariable id: Long): ResponseEntity<User> {
+        val user = userService.getUserById(id)
         return ResponseEntity.ok(user)
     }
     
     /**
-     * Получить пользователя по Telegram ID
-     */
-    @GetMapping("/{telegramId}")
-    suspend fun getUserByTelegramId(@PathVariable telegramId: Long): ResponseEntity<User> {
-        val user = userService.findByTelegramId(telegramId)
-        return if (user != null) {
-            ResponseEntity.ok(user)
-        } else {
-            ResponseEntity.notFound().build()
-        }
-    }
-    
-    /**
-     * Получить всех активных пользователей
+     * Получение всех пользователей
      */
     @GetMapping
-    suspend fun getAllActiveUsers(): ResponseEntity<List<User>> {
-        val users = userService.getAllActiveUsers()
+    suspend fun getAllUsers(): ResponseEntity<List<User>> {
+        val users = userService.getAllUsers()
         return ResponseEntity.ok(users)
     }
     
     /**
-     * Деактивировать пользователя
+     * Обновление пользователя
      */
-    @DeleteMapping("/{telegramId}")
-    suspend fun deactivateUser(@PathVariable telegramId: Long): ResponseEntity<User> {
-        val user = userService.deactivateUser(telegramId)
-        return if (user != null) {
-            ResponseEntity.ok(user)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+    @PutMapping("/{id}")
+    suspend fun updateUser(@PathVariable id: Long, @RequestBody user: User): ResponseEntity<User> {
+        val updatedUser = userService.updateUser(id, user)
+        
+        // Отправляем событие в Kafka
+        kafkaService.sendUserEvent(
+            userId = id,
+            eventType = "user_updated",
+            data = mapOf(
+                "username" to updatedUser.username,
+                "email" to (updatedUser.email ?: ""),
+                "telegramId" to (updatedUser.telegramId?.toString() ?: "")
+            )
+        )
+        
+        return ResponseEntity.ok(updatedUser)
     }
     
-
-/**
- * DTO для создания пользователя
- */
-data class CreateUserRequest(
-    val telegramId: Long
-)}
+    /**
+     * Удаление пользователя
+     */
+    @DeleteMapping("/{id}")
+    suspend fun deleteUser(@PathVariable id: Long): ResponseEntity<Unit> {
+        userService.deleteUser(id)
+        
+        // Отправляем событие в Kafka
+        kafkaService.sendUserEvent(
+            userId = id,
+            eventType = "user_deleted",
+            data = mapOf("deletedAt" to System.currentTimeMillis())
+        )
+        
+        return ResponseEntity.ok().build()
+    }
+    
+    /**
+     * Отправка тестового уведомления
+     */
+    @PostMapping("/{id}/notify")
+    suspend fun sendTestNotification(
+        @PathVariable id: Long,
+        @RequestBody notification: Map<String, String>
+    ): ResponseEntity<Map<String, String>> {
+        val message = notification["message"] ?: "Тестовое уведомление"
+        val type = notification["type"] ?: "info"
+        
+        kafkaService.sendNotification(id, message, type)
+        
+        return ResponseEntity.ok(mapOf(
+            "status" to "success",
+            "message" to "Уведомление отправлено в очередь"
+        ))
+    }
+}
 
 

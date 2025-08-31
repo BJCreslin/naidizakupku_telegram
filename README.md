@@ -1,177 +1,190 @@
-# Telegram Bot Application
+# Naidizakupku Telegram Bot
 
-Spring Boot приложение для Telegram бота на Kotlin.
+Spring Boot приложение с интеграцией Apache Kafka для обработки событий и уведомлений.
 
 ## Технологии
 
-- **Kotlin 2.0**
-- **Spring Boot 3.3**
-- **JDK 21**
-- **Gradle (Kotlin DSL)**
-- **PostgreSQL**
-- **Apache Kafka**
-- **Docker**
-- **GitHub Actions**
+- **Kotlin 2.0** + **Spring Boot 3.3**
+- **PostgreSQL** + **Liquibase**
+- **Apache Kafka** + **Zookeeper**
+- **Docker** + **Docker Compose**
+- **Gradle Kotlin DSL**
 
-## Структура проекта
+## Быстрый старт
 
-```
-src/
-├── main/
-│   ├── kotlin/
-│   │   └── com/naidizakupku/telegram/
-│   │       ├── config/          # Конфигурации
-│   │       ├── controller/      # REST контроллеры
-│   │       ├── domain/          # Доменные модели
-│   │       ├── repository/      # Репозитории
-│   │       ├── service/         # Бизнес-логика
-│   │       └── TelegramApplication.kt
-│   └── resources/
-│       ├── application.yml      # Основная конфигурация
-│       └── db/
-│           └── changelog/       # Миграции Liquibase
-└── test/
-    └── kotlin/                  # Тесты
-```
+### Локальная разработка
 
-## Локальная разработка
-
-### Требования
-
-- JDK 21
-- Docker
-- Docker Compose
-
-### Запуск
-
-1. Клонируй репозиторий:
+1. **Клонируйте репозиторий:**
 ```bash
 git clone <repository-url>
 cd naidizakupku_telegram
 ```
 
-2. Запусти зависимости через Docker Compose:
+2. **Создайте файл .env:**
 ```bash
-docker-compose up -d
+cp env.example .env
+# Отредактируйте .env файл с вашими настройками
 ```
 
-3. Запусти приложение:
+3. **Запустите локальную среду:**
 ```bash
+# Запуск всех сервисов (PostgreSQL, Kafka, Zookeeper)
+docker-compose up -d
+
+# Или только Kafka
+docker-compose up -d zookeeper kafka
+
+# Запуск приложения
 ./gradlew bootRun
 ```
 
-### Тестирование
+4. **Проверьте работу:**
+- Приложение: http://localhost:8080
+- Kafka UI: http://localhost:8081 (в продакшене)
+- Health check: http://localhost:8080/actuator/health
+
+### Продакшен деплой на VPS
+
+1. **Подготовьте VPS:**
+```bash
+# Установите Docker и Docker Compose на VPS
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+```
+
+2. **Деплой на VPS:**
+```bash
+# Запустите скрипт деплоя
+./jenkins/deploy-kafka.sh
+```
+
+3. **Проверьте работу:**
+- Приложение: http://5.44.40.79:8080
+- Kafka UI: http://5.44.40.79:8081
+- Kafka: 5.44.40.79:9092
+
+## Архитектура
+
+### Kafka Топики
+
+- **user-events** - события пользователей (регистрация, обновление, удаление)
+- **notifications** - уведомления для отправки пользователям
+
+### Сервисы
+
+- **KafkaService** - отправка сообщений в Kafka
+- **KafkaConsumerService** - обработка сообщений из Kafka
+- **UserService** - бизнес-логика пользователей
+
+## API Endpoints
+
+### Пользователи
+
+```bash
+# Создать пользователя
+POST /api/users
+{
+  "username": "test_user",
+  "email": "test@example.com",
+  "telegramId": 123456789
+}
+
+# Получить пользователя
+GET /api/users/{id}
+
+# Обновить пользователя
+PUT /api/users/{id}
+
+# Удалить пользователя
+DELETE /api/users/{id}
+
+# Отправить уведомление
+POST /api/users/{id}/notify
+{
+  "message": "Тестовое уведомление",
+  "type": "info"
+}
+```
+
+## Конфигурация
+
+### Переменные окружения
+
+```bash
+# База данных
+POSTGRES_DB=telegram_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram_db
+
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_USER=
+KAFKA_PASSWORD=
+
+# Приложение
+SERVER_PORT=8080
+SPRING_PROFILES_ACTIVE=dev
+```
+
+### Docker Compose
+
+- **docker-compose.yml** - для локальной разработки
+- **docker-compose.prod.yml** - для продакшена с автозапуском
+
+## Мониторинг
+
+### Логи
+
+```bash
+# Логи приложения
+docker-compose logs -f app
+
+# Логи Kafka
+docker-compose logs -f kafka
+
+# Логи Zookeeper
+docker-compose logs -f zookeeper
+```
+
+### Метрики
+
+- Prometheus метрики: http://localhost:8080/actuator/prometheus
+- Health check: http://localhost:8080/actuator/health
+
+## Автозапуск на VPS
+
+Приложение настроено на автозапуск при перезагрузке VPS через systemd:
+
+```bash
+# Проверить статус
+sudo systemctl status naidizakupku-telegram
+
+# Перезапустить
+sudo systemctl restart naidizakupku-telegram
+
+# Посмотреть логи
+sudo journalctl -u naidizakupku-telegram -f
+```
+
+## Разработка
+
+### Запуск тестов
 
 ```bash
 ./gradlew test
 ```
 
-## CI/CD Pipeline
+### Сборка
 
-Проект использует GitHub Actions для автоматизации CI/CD.
-
-### Workflow
-
-1. **Test** - Запуск тестов
-2. **Build** - Сборка JAR файла
-3. **Docker Build** - Сборка Docker образа (только для main)
-4. **Deploy** - Деплой на сервер (только для main)
-
-### Настройка Secrets
-
-Добавь следующие secrets в GitHub репозитории (Settings → Secrets and variables → Actions):
-
-#### Обязательные:
-- `SERVER_IP` - IP адрес сервера
-- `SSH_PORT` - SSH порт (обычно 22)
-- `SERVER_USER` - пользователь сервера
-- `SSH_KEY` - приватный SSH ключ (включая `-----BEGIN OPENSSH PRIVATE KEY-----` и `-----END OPENSSH PRIVATE KEY-----`)
-- `GHCR_TOKEN` - Personal Access Token с правами `write:packages`
-
-#### База данных:
-- `POSTGRES_URL` - URL PostgreSQL
-- `POSTGRES_USER` - пользователь PostgreSQL
-- `POSTGRES_PASSWORD` - пароль PostgreSQL
-
-#### Kafka:
-- `KAFKA_BOOTSTRAP_SERVERS` - адреса Kafka серверов
-
-### Создание Personal Access Token
-
-1. Перейди в GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Создай новый токен с правами:
-   - `repo` (полный доступ к репозиторию)
-   - `write:packages` (запись в GitHub Container Registry)
-3. Сохрани токен как `GHCR_TOKEN` в secrets
-
-### Создание SSH ключа
-
-1. Создай SSH ключ на локальной машине:
 ```bash
-ssh-keygen -t ed25519 -C "github-actions@example.com"
+./gradlew build
 ```
 
-2. Добавь публичный ключ на сервер:
-```bash
-ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server-ip
-```
-
-3. Скопируй содержимое приватного ключа (включая заголовки):
-```bash
-cat ~/.ssh/id_ed25519
-```
-
-4. Сохрани как `SSH_KEY` в GitHub secrets
-
-### Environment
-
-Создай environment `production` в GitHub:
-1. Settings → Environments → New environment
-2. Название: `production`
-3. Добавь все secrets выше
-
-## Docker
-
-### Сборка образа
+### Docker образ
 
 ```bash
 docker build -t naidizakupku-telegram .
 ```
-
-### Запуск контейнера
-
-```bash
-docker run -d \
-  --name telegram-app \
-  -p 8080:8080 \
-  -e POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=password \
-  -e KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
-  naidizakupku-telegram
-```
-
-## Миграции базы данных
-
-Миграции управляются через Liquibase и находятся в `src/main/resources/db/changelog/`.
-
-### Создание новой миграции
-
-1. Создай новый XML файл в `src/main/resources/db/changelog/changes/`
-2. Добавь ссылку в `db.changelog-master.xml`
-3. При запуске приложения миграции применятся автоматически
-
-## Логирование
-
-Логи сохраняются в `/opt/telegram-app/logs/` при запуске в Docker.
-
-## Мониторинг
-
-Приложение предоставляет health check endpoint:
-```
-GET /actuator/health
-```
-
-## Лицензия
-
-MIT License
