@@ -53,13 +53,24 @@ docker-compose up -d zookeeper kafka
 
 Если возникают проблемы с запуском, см. [DEPLOYMENT_FIX.md](DEPLOYMENT_FIX.md)
 
-**Быстрое исправление проблемы с JAXB:**
+**Быстрое исправление проблем:**
+
+**Проблема с JAXB:**
 ```bash
 # Linux/macOS
 ./scripts/fix-jaxb-issue.sh
 
 # Windows
 scripts\fix-jaxb-issue.bat
+```
+
+**Проблема с подключением к БД:**
+```bash
+# Linux/macOS
+./scripts/fix-database-connection.sh
+
+# Windows
+scripts\fix-database-connection.bat
 ```
 
 ### Продакшен деплой на VPS

@@ -1,12 +1,14 @@
 package com.naidizakupku.telegram.config
 
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
 
 /**
  * Конфигурация Telegram бота
  */
 @Configuration
+@ConditionalOnProperty(name = ["telegram.bot.token"])
 class TelegramConfig {
     
     @Value("\${telegram.bot.token}")

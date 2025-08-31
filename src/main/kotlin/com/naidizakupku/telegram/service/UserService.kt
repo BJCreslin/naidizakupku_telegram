@@ -2,6 +2,7 @@ package com.naidizakupku.telegram.service
 
 import com.naidizakupku.telegram.domain.User
 import com.naidizakupku.telegram.repository.UserRepository
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -10,10 +11,11 @@ import java.time.LocalDateTime
  * Сервис для работы с пользователями
  */
 @Service
+@ConditionalOnProperty(name = ["spring.datasource.url"])
 @Transactional
 class UserService(
     private val userRepository: UserRepository
-) {
+) : UserServiceInterface {
     
     /**
      * Создать нового пользователя
@@ -122,7 +124,7 @@ class UserService(
     /**
      * Сохранить или обновить пользователя по Telegram данным
      */
-    suspend fun saveOrUpdateUser(
+    override suspend fun saveOrUpdateUser(
         telegramId: Long,
         firstName: String?,
         lastName: String?,

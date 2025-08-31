@@ -1,5 +1,60 @@
 # Исправление проблем деплоя
 
+## Проблема с подключением к базе данных
+
+### Описание проблемы
+При запуске приложения в Docker контейнере возникает ошибка:
+```
+Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
+```
+
+Это происходит потому, что приложение в Docker контейнере не может подключиться к PostgreSQL по адресу `localhost`.
+
+### Решение
+
+#### Автоматическое исправление
+Запустите один из скриптов:
+
+**Linux/macOS:**
+```bash
+./scripts/fix-database-connection.sh
+```
+
+**Windows:**
+```cmd
+scripts\fix-database-connection.bat
+```
+
+#### Ручное исправление
+
+1. **Для локальной разработки с Docker Compose:**
+   ```bash
+   POSTGRES_URL=jdbc:postgresql://postgres:5432/telegram_db
+   ```
+
+2. **Для продакшена (PostgreSQL на VPS):**
+   ```bash
+   POSTGRES_URL=jdbc:postgresql://5.44.40.79:5432/telegram_db
+   ```
+
+3. **Для локальной разработки без Docker:**
+   ```bash
+   POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram_db
+   ```
+
+4. **Запуск с правильным профилем:**
+   ```bash
+   # С профилем dev (Docker Compose)
+   ./gradlew bootRun --args='--spring.profiles.active=dev'
+   
+   # С профилем prod (VPS)
+   ./gradlew bootRun --args='--spring.profiles.active=prod'
+   ```
+
+### Проверка исправления
+
+После исправления приложение должно запускаться без ошибок подключения к БД.
+
 ## Проблема с JAXB в Java 21
 
 ### Описание проблемы

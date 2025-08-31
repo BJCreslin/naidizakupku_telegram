@@ -3,6 +3,7 @@ package com.naidizakupku.telegram.service
 import com.naidizakupku.telegram.config.TelegramConfig
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -13,10 +14,11 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException
  * Сервис Telegram бота с эхо-функцией
  */
 @Service
+@ConditionalOnProperty(name = ["telegram.bot.token"])
 @Deprecated("Используется deprecated конструктор TelegramLongPollingBot")
 class TelegramBotService(
     private val telegramConfig: TelegramConfig,
-    private val userService: UserService
+    private val userService: UserServiceInterface
 ) : TelegramLongPollingBot() {
     
     private val logger = LoggerFactory.getLogger(TelegramBotService::class.java)
