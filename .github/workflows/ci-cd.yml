@@ -141,9 +141,9 @@ jobs:
               --name telegram-app \
               --restart unless-stopped \
               -p 8080:8080 \
-              -e POSTGRES_URL='$POSTGRES_URL' \
-              -e POSTGRES_USER='$POSTGRES_USER' \
-              -e POSTGRES_PASSWORD='$POSTGRES_PASSWORD' \
+              -e POSTGRES_URL="$POSTGRES_URL" \
+              -e POSTGRES_USER="$POSTGRES_USER" \
+              -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
               -e SPRING_PROFILES_ACTIVE=prod \
               -v /opt/telegram-app/logs:/app/logs \
               $DOCKER_IMAGE:latest

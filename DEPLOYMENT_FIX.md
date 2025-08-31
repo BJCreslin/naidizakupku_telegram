@@ -1,146 +1,133 @@
-# Исправление проблемы с деплоем
+# Исправление проблем деплоя
 
-## Проблема
-При деплое приложения возникала ошибка 503 при проверке health endpoint. Основные причины:
+## Проблемы, которые были исправлены
 
-1. **Проблема с переменными окружения** - `$POSTGRES_URL` не подставлялся в конфигурацию
-2. **Проблема с Kafka** - приложение пыталось подключиться к недоступному Kafka серверу
-3. **Недостаточное время ожидания** - приложение не успевало запуститься
+### 1. Проблема с переменными окружения PostgreSQL
 
-## Решения
-
-### 1. Исправление переменных окружения
-
-**Проблема**: Переменная `$POSTGRES_URL` не была установлена в окружении.
-
-**Решение**: Установить переменные окружения в PowerShell:
-```powershell
-$env:POSTGRES_URL="jdbc:postgresql://localhost:5432/telegram_db"
-$env:POSTGRES_USER="postgres"
-$env:POSTGRES_PASSWORD="password"
+**Проблема:** В логах видно, что переменные окружения не подставляются в контейнер:
+```
+Driver org.postgresql.Driver claims to not accept jdbcUrl, $POSTGRES_URL
 ```
 
-### 2. Отключение Kafka в продакшене
-
-**Проблема**: Приложение пыталось подключиться к Kafka, который недоступен в продакшене.
-
-**Решение**: Создан профиль `prod` в `application-prod.yml`:
-```yaml
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-  kafka:
-    bootstrap-servers: ""
-    producer:
-      enabled: false
-    admin:
-      auto-create: false
-
-logging:
-  level:
-    org.springframework.kafka: OFF
-    org.apache.kafka: OFF
-```
-
-### 3. Обновление GitHub Actions workflow
-
-**Изменения в `.github/workflows/ci-cd.yml`**:
-
-1. Добавлен профиль `prod`:
+**Причина:** В GitHub Actions workflow использовались одинарные кавычки вместо двойных:
 ```bash
--e SPRING_PROFILES_ACTIVE=prod \
+# Неправильно
+-e POSTGRES_URL='$POSTGRES_URL'
+
+# Правильно  
+-e POSTGRES_URL="$POSTGRES_URL"
 ```
 
-2. Увеличено время ожидания:
+**Исправление:** Обновлен файл `.github/workflows/ci-cd.yml`
+
+### 2. Проблема с конфигурацией Kafka
+
+**Проблема:** Конфликт между auto commit и MANUAL_IMMEDIATE ack mode:
+```
+Consumer cannot be configured for auto commit for ackMode MANUAL_IMMEDIATE
+```
+
+**Причина:** В конфигурации было включено `enable-auto-commit: true` при использовании `ackMode: MANUAL_IMMEDIATE`
+
+**Исправление:**
+- Отключен auto commit в `application-prod.yml`
+- Отключен auto commit в `KafkaConfig.kt`
+- Добавлена условная загрузка Kafka компонентов
+
+### 3. Проблема с недоступностью Kafka
+
+**Проблема:** Приложение падает если Kafka недоступен
+
+**Исправление:**
+- Добавлена условная загрузка Kafka компонентов через `@ConditionalOnProperty`
+- В продакшене Kafka отключается если `KAFKA_BOOTSTRAP_SERVERS` не указан
+
+## Как применить исправления
+
+### Автоматически через GitHub Actions
+
+1. Закоммитьте изменения:
 ```bash
-sleep 60  # вместо 30
+git add .
+git commit -m "Fix deployment issues: PostgreSQL env vars and Kafka config"
+git push origin main
 ```
 
-3. Улучшен healthcheck с повторными попытками:
+2. GitHub Actions автоматически запустит новый деплой с исправлениями
+
+### Вручную на сервере
+
+1. Запустите скрипт исправления:
 ```bash
-for i in {1..10}; do
-    if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
-        echo "Application is healthy!"
-        break
-    else
-        echo "Health check attempt $i failed, waiting..."
-        sleep 10
-    fi
-    
-    if [ $i -eq 10 ]; then
-        echo "Application failed to start properly!"
-        exit 1
-    fi
-done
+# Установите переменные окружения
+export GHCR_TOKEN="your_ghcr_token"
+export POSTGRES_URL="your_postgres_url"
+export POSTGRES_USER="your_postgres_user"
+export POSTGRES_PASSWORD="your_postgres_password"
+
+# Запустите скрипт
+./scripts/fix-deployment.sh
 ```
 
-4. Удалена переменная `KAFKA_BOOTSTRAP_SERVERS` из environment и envs.
+## Проверка исправлений
 
-### 4. Исправление репозитория
-
-**Проблема**: В `UserRepository` был метод `findByUsername`, но поле `username` было удалено из сущности.
-
-**Решение**: Удален метод `findByUsername` из репозитория.
-
-## Тестирование
-
-### Локальное тестирование
-```bash
-# Установить переменные окружения
-$env:POSTGRES_URL="jdbc:postgresql://localhost:5432/telegram_db"
-$env:POSTGRES_USER="postgres"
-$env:POSTGRES_PASSWORD="password"
-
-# Запустить с профилем prod
-$env:SPRING_PROFILES_ACTIVE="prod"; ./gradlew bootRun
-```
-
-### Тестирование Docker образа
-```bash
-# Создать образ
-docker build -t ghcr.io/bjcreslin/naidizakupku-telegram:latest .
-
-# Запустить контейнер
-docker run -d --name telegram-app-test \
-  -p 8081:8080 \
-  -e SPRING_PROFILES_ACTIVE=prod \
-  -e POSTGRES_URL=jdbc:postgresql://host.docker.internal:5432/telegram_db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=password \
-  ghcr.io/bjcreslin/naidizakupku-telegram:latest
-
-# Проверить health endpoint
-curl http://localhost:8081/actuator/health
-```
-
-## Результат
-
-После внесения исправлений:
-- ✅ Приложение успешно запускается с профилем `prod`
-- ✅ Kafka отключен в продакшене через `autoconfigure.exclude`
-- ✅ Переменные окружения корректно подставляются
-- ✅ Увеличено время ожидания для стабильного деплоя (60 секунд)
-- ✅ Добавлены повторные попытки health check (10 попыток)
-- ✅ Обновлен GitHub Actions workflow с правильными переменными окружения
-
-## Ключевые изменения
-
-1. **Создан профиль `prod`** - отключает Kafka автоконфигурацию
-2. **Обновлен workflow** - использует `SPRING_PROFILES_ACTIVE=prod` вместо `KAFKA_BOOTSTRAP_SERVERS`
-3. **Улучшен health check** - 10 попыток с интервалом 10 секунд
-4. **Увеличено время ожидания** - 60 секунд для полного запуска приложения
-
-## Быстрое исправление
-
-Для быстрого исправления приложения используйте скрипт:
+### 1. Проверка переменных окружения
 
 ```bash
-./scripts/fix-app.sh
+# Проверьте логи контейнера
+docker logs telegram-app | grep "POSTGRES_URL"
+
+# Должно показать реальный URL, а не $POSTGRES_URL
 ```
 
-## Следующие шаги
+### 2. Проверка Kafka
 
-1. Запустить новый деплой с исправленным кодом
-2. Мониторить логи приложения в продакшене
-3. При необходимости добавить Kafka в продакшен инфраструктуру
+```bash
+# Проверьте что приложение запустилось без ошибок Kafka
+docker logs telegram-app | grep -i kafka
+
+# Если Kafka отключен, не должно быть ошибок подключения
+```
+
+### 3. Проверка здоровья приложения
+
+```bash
+# Проверьте health endpoint
+curl http://localhost:8080/actuator/health
+
+# Должен вернуть {"status":"UP"}
+```
+
+## Дополнительные улучшения
+
+### 1. Добавлена условная загрузка Kafka
+
+Теперь приложение может работать без Kafka:
+- Если `KAFKA_BOOTSTRAP_SERVERS` не указан, Kafka компоненты не загружаются
+- Приложение запускается только с базовой функциональностью
+
+### 2. Улучшен скрипт деплоя
+
+- Добавлены проверки переменных окружения
+- Улучшена диагностика проблем
+- Добавлены эмодзи для лучшей читаемости логов
+
+### 3. Обновлена документация
+
+- Создан файл `DEPLOYMENT_FIX.md` с описанием проблем и решений
+- Добавлен скрипт `fix-deployment.sh` для быстрого исправления
+
+## Мониторинг
+
+После исправления следите за логами:
+
+```bash
+# Мониторинг логов в реальном времени
+docker logs -f telegram-app
+
+# Проверка статуса контейнера
+docker ps | grep telegram-app
+
+# Проверка использования ресурсов
+docker stats telegram-app
+```

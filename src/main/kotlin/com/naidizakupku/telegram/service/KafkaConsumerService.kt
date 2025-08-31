@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service
  * Сервис для потребления сообщений из Kafka
  */
 @Service
-@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"])
+@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"], matchIfMissing = false)
 class KafkaConsumerService(
     private val objectMapper: ObjectMapper
 ) {

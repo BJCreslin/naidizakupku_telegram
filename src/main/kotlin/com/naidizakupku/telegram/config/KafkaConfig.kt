@@ -18,7 +18,7 @@ import org.springframework.kafka.listener.ContainerProperties
  * Конфигурация Kafka
  */
 @Configuration
-@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"])
+@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"], matchIfMissing = false)
 class KafkaConfig {
     
     @Value("\${spring.kafka.bootstrap-servers}")
@@ -64,8 +64,7 @@ class KafkaConfig {
         configProps[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
         configProps[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
         configProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = "earliest"
-        configProps[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = "true"
-        configProps[ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG] = "1000"
+        configProps[ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG] = "false"
         configProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = "500"
         configProps[ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG] = "30000"
         configProps[ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG] = "3000"

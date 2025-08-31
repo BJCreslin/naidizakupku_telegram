@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture
  * Сервис для работы с Kafka
  */
 @Service
-@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"])
+@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"], matchIfMissing = false)
 class KafkaService(
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper
