@@ -118,5 +118,40 @@ class UserService(
     suspend fun getAllActiveUsers(): List<User> {
         return userRepository.findByActiveTrue()
     }
+    
+    /**
+     * Сохранить или обновить пользователя по Telegram данным
+     */
+    suspend fun saveOrUpdateUser(
+        telegramId: Long,
+        firstName: String?,
+        lastName: String?,
+        username: String?
+    ): User {
+        val existingUser = userRepository.findByTelegramId(telegramId)
+        
+        return if (existingUser != null) {
+            // Обновляем существующего пользователя
+            val updatedUser = existingUser.copy(
+                firstName = firstName,
+                lastName = lastName,
+                username = username,
+                updatedAt = LocalDateTime.now()
+            )
+            userRepository.save(updatedUser)
+        } else {
+            // Создаем нового пользователя
+            val newUser = User(
+                telegramId = telegramId,
+                firstName = firstName,
+                lastName = lastName,
+                username = username,
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now(),
+                active = true
+            )
+            userRepository.save(newUser)
+        }
+    }
 }
 

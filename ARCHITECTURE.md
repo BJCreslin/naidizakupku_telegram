@@ -23,7 +23,7 @@ Telegram-бот для поиска и покупки товаров с инте
 
 ### 2. Service Layer (`service/`)
 **Назначение**: Бизнес-логика приложения
-- `TelegramService.kt` - основная логика обработки Telegram сообщений
+- `TelegramBotService.kt` - основной сервис Telegram бота с эхо-функцией
 - `UserService.kt` - управление пользователями
 - `KafkaService.kt` - работа с Kafka для асинхронной обработки
 
@@ -38,12 +38,12 @@ Telegram-бот для поиска и покупки товаров с инте
 ### 5. Config Layer (`config/`)
 **Назначение**: Конфигурация приложения
 - `KafkaConfig.kt` - настройки Kafka
-- `TelegramConfig.kt` - настройки Telegram Bot
+- `TelegramConfig.kt` - настройки Telegram Bot (токен, имя, username)
 
 ## Поток данных
 
 ```
-Telegram Bot API → TelegramController → TelegramService → UserService → UserRepository → PostgreSQL
+Telegram Bot API → TelegramBotService → UserService → UserRepository → PostgreSQL
                                     ↓
                               KafkaService → Kafka → Асинхронная обработка
 ```
@@ -53,8 +53,12 @@ Telegram Bot API → TelegramController → TelegramService → UserService → 
 ### Таблица `users`
 - `id` (BIGINT, PRIMARY KEY) - уникальный идентификатор
 - `telegram_id` (BIGINT, UNIQUE) - ID пользователя в Telegram
+- `first_name` (VARCHAR(255)) - имя пользователя
+- `last_name` (VARCHAR(255)) - фамилия пользователя
+- `username` (VARCHAR(255)) - username пользователя
 - `created_at` (TIMESTAMP) - время создания записи
 - `updated_at` (TIMESTAMP) - время последнего обновления
+- `active` (BOOLEAN) - статус активности пользователя
 
 ## Kafka Topics
 
@@ -80,6 +84,8 @@ Telegram Bot API → TelegramController → TelegramService → UserService → 
 - `KAFKA_USER` - пользователь Kafka
 - `KAFKA_PASSWORD` - пароль Kafka
 - `TELEGRAM_BOT_TOKEN` - токен Telegram бота
+- `TELEGRAM_BOT_NAME` - имя Telegram бота
+- `TELEGRAM_BOT_USERNAME` - username Telegram бота
 
 ## Развертывание
 

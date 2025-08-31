@@ -26,7 +26,12 @@ cp env.example .env
 # Отредактируйте .env файл с вашими настройками
 ```
 
-3. **Запустите локальную среду:**
+3. **Настройте Telegram бота:**
+   - Создайте бота через @BotFather в Telegram
+   - Добавьте токен и данные бота в .env файл
+   - Подробная инструкция: [TELEGRAM_BOT_SETUP.md](TELEGRAM_BOT_SETUP.md)
+
+4. **Запустите локальную среду:**
 ```bash
 # Запуск всех сервисов (PostgreSQL, Kafka, Zookeeper)
 docker-compose up -d
@@ -38,8 +43,9 @@ docker-compose up -d zookeeper kafka
 ./gradlew bootRun
 ```
 
-4. **Проверьте работу:**
+5. **Проверьте работу:**
 - Приложение: http://localhost:8080
+- Telegram бот: найдите бота по username и отправьте сообщение
 - Kafka UI: http://localhost:8081 (в продакшене)
 - Health check: http://localhost:8080/actuator/health
 
@@ -71,9 +77,10 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 ### Основные компоненты
 
+- **TelegramBotService** - основной сервис Telegram бота с эхо-функцией
+- **UserService** - бизнес-логика пользователей
 - **KafkaService** - отправка сообщений в Kafka
 - **KafkaConsumerService** - обработка сообщений из Kafka
-- **UserService** - бизнес-логика пользователей
 
 ### Kafka Топики
 
@@ -139,6 +146,11 @@ POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram_db
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 KAFKA_USER=
 KAFKA_PASSWORD=
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_BOT_NAME=your_telegram_bot_name_here
+TELEGRAM_BOT_USERNAME=your_telegram_bot_username_here
 
 # Приложение
 SERVER_PORT=8080

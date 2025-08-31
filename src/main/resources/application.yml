@@ -51,10 +51,17 @@ management:
       prometheus:
         enabled: true
 
+telegram:
+  bot:
+    token: ${TELEGRAM_BOT_TOKEN:}
+    name: ${TELEGRAM_BOT_NAME:}
+    username: ${TELEGRAM_BOT_USERNAME:}
+
 logging:
   level:
     com.naidizakupku.telegram: INFO
     org.springframework.kafka: INFO
+    org.telegram: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
