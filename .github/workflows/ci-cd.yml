@@ -146,15 +146,7 @@ jobs:
             # Скачиваю новый образ
             docker pull $DOCKER_IMAGE:$DOCKER_TAG
             docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
-            
-            # Проверяем переменные окружения
-            echo "POSTGRES_URL: $POSTGRES_URL"
-            echo "POSTGRES_USER: $POSTGRES_USER"
-            echo "POSTGRES_PASSWORD: [HIDDEN]"
-            echo "DEBUG: POSTGRES_URL=${POSTGRES_URL}"
-            echo "DEBUG: POSTGRES_USER=${POSTGRES_USER}"
-            echo "DEBUG: POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
-            
+                   
             echo "==== DEBUG ENV on SERVER ===="
             env | grep POSTGRES
             echo "============================"
@@ -165,12 +157,9 @@ jobs:
               --restart unless-stopped \
               -p 8080:8080 \
               --add-host=host.docker.internal:host-gateway \
-              -e POSTGRES_URL="jdbc:postgresql://host.docker.internal:5432/telegram_db" \
-              -e POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
-              -e POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
-              -e SPRING_PROFILES_ACTIVE=prod \
-              -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}"  \
-              -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}"  \
+
+              -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+              -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}" \
               -v /opt/telegram-app/logs:/app/logs \
               $DOCKER_IMAGE:latest
             
