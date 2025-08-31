@@ -2,11 +2,17 @@ spring:
   application:
     name: naidizakupku-telegram
   
-  datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://postgres:5432/telegram_db}
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:password}
-    driver-class-name: org.postgresql.Driver
+#  datasource:
+#    url: ${POSTGRES_URL:jdbc:postgresql://postgres:5432/telegram_db}
+#    username: ${POSTGRES_USER:postgres}
+#    password: ${POSTGRES_PASSWORD:password}
+#    driver-class-name: org.postgresql.Driver
+
+    datasource:
+      url: jdbc:postgresql://host.docker.internal:5432/telegram_db
+      username: bot
+      password: bot_password
+      driver-class-name: org.postgresql.Driver
   
   jpa:
     hibernate:
