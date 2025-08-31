@@ -1,187 +1,114 @@
-# Исправление проблем деплоя
+# Исправление проблемы с подключением к базе данных
 
-## Проблема с подключением к базе данных
+## Проблема
+Приложение в контейнере не может подключиться к PostgreSQL, запущенному локально на VPS.
 
-### Описание проблемы
-При запуске приложения в Docker контейнере возникает ошибка:
-```
-Unable to determine Dialect without JDBC metadata (please set 'jakarta.persistence.jdbc.url' for common cases or 'hibernate.dialect' when a custom Dialect implementation must be provided)
-```
+## Причина
+В `application-prod.yml` был указан IP `5.44.40.79:5432`, но контейнер не может подключиться к этому адресу.
 
-Это происходит потому, что приложение в Docker контейнере не может подключиться к PostgreSQL по адресу `localhost`.
+## Решение
 
-### Решение
+### 1. Исправлена конфигурация
+- Изменен URL в `application-prod.yml`: `host.docker.internal:5432`
+- Убран явный диалект PostgreSQL (Hibernate сам определит)
+- Добавлен `extra_hosts` в docker-compose.prod.yml
 
-#### Автоматическое исправление
-Запустите один из скриптов:
+### 2. Обновлен GitHub Actions CI/CD
+- Добавлен `--add-host=host.docker.internal:host-gateway` для подключения к локальной БД
+- Добавлены переменные окружения для Telegram бота
+- Исправлен URL подключения к БД
 
-**Linux/macOS:**
+### 3. Скрипты для исправления
+- `scripts/fix-database-connection.sh` - для Linux
+- `scripts/fix-database-connection.bat` - для Windows
+
+## Инструкция по развертыванию
+
+### На VPS с Ubuntu:
+
+1. **Убедитесь, что PostgreSQL запущен локально:**
 ```bash
-./scripts/fix-database-connection.sh
+sudo systemctl status postgresql
+sudo systemctl start postgresql  # если не запущен
 ```
 
-**Windows:**
-```cmd
-scripts\fix-database-connection.bat
-```
-
-#### Ручное исправление
-
-1. **Для локальной разработки с Docker Compose:**
-   ```bash
-   POSTGRES_URL=jdbc:postgresql://postgres:5432/telegram_db
-   ```
-
-2. **Для продакшена (PostgreSQL на VPS):**
-   ```bash
-   POSTGRES_URL=jdbc:postgresql://5.44.40.79:5432/telegram_db
-   ```
-
-3. **Для локальной разработки без Docker:**
-   ```bash
-   POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram_db
-   ```
-
-4. **Запуск с правильным профилем:**
-   ```bash
-   # С профилем dev (Docker Compose)
-   ./gradlew bootRun --args='--spring.profiles.active=dev'
-   
-   # С профилем prod (VPS)
-   ./gradlew bootRun --args='--spring.profiles.active=prod'
-   ```
-
-### Проверка исправления
-
-После исправления приложение должно запускаться без ошибок подключения к БД.
-
-## Проблема с JAXB в Java 21
-
-### Описание проблемы
-При запуске приложения в Java 21 возникает ошибка:
-```
-java.lang.NoClassDefFoundError: javax/xml/bind/annotation/XmlElement
-```
-
-Это происходит потому, что модуль JAXB был удален из JDK начиная с Java 9.
-
-### Решение
-
-#### Автоматическое исправление
-Запустите один из скриптов:
-
-**Linux/macOS:**
+2. **Создайте базу данных и пользователя:**
 ```bash
-./scripts/fix-jaxb-issue.sh
+sudo -u postgres psql
+CREATE DATABASE telegram_db;
+CREATE USER your_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE telegram_db TO your_user;
+\q
 ```
 
-**Windows:**
-```cmd
-scripts\fix-jaxb-issue.bat
-```
-
-#### Ручное исправление
-
-1. **Добавьте зависимости в `build.gradle.kts`:**
-```kotlin
-// JAXB API для Java 21
-implementation("javax.xml.bind:jaxb-api:2.3.1")
-implementation("org.glassfish.jaxb:jaxb-runtime:4.0.4")
-```
-
-2. **Удалите явное указание диалекта PostgreSQL из `application.yml`:**
-```yaml
-jpa:
-  properties:
-    hibernate:
-      # Удалите строку: dialect: org.hibernate.dialect.PostgreSQLDialect
-      format_sql: true
-```
-
-3. **Пересоберите проект:**
+3. **Установите переменные окружения:**
 ```bash
-./gradlew clean build
+export POSTGRES_USER=your_user
+export POSTGRES_PASSWORD=your_password
+export POSTGRES_DB=telegram_db
 ```
 
-### Проверка исправления
+4. **Приложение автоматически деплоится через GitHub Actions при пуше в main**
 
-После исправления приложение должно запускаться без ошибок:
-
+5. **Проверьте логи:**
 ```bash
-./gradlew bootRun
+docker logs -f telegram-app
 ```
 
-Логи должны показывать успешный запуск:
-```
-2025-08-31 11:13:07 [main] INFO  c.n.telegram.TelegramApplicationKt - Starting TelegramApplicationKt
-...
-2025-08-31 11:13:15 [main] INFO  c.n.telegram.TelegramApplicationKt - Started TelegramApplicationKt
-```
+### Альтернативное решение
 
-## Другие проблемы
+Если `host.docker.internal` не работает, используйте IP хоста:
 
-### Проблема с подключением к базе данных
-Если возникает ошибка подключения к PostgreSQL:
-
-1. **Проверьте переменные окружения:**
+1. **Найдите IP хоста:**
 ```bash
-POSTGRES_URL=jdbc:postgresql://localhost:5432/telegram_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
+ip addr show | grep inet
 ```
 
-2. **Убедитесь, что PostgreSQL запущен:**
+2. **Измените POSTGRES_URL в GitHub Secrets:**
 ```bash
-docker-compose up -d postgres
+# В настройках репозитория GitHub -> Secrets and variables -> Actions
+POSTGRES_URL=jdbc:postgresql://host.docker.internal:5432/telegram_db
 ```
 
-### Проблема с Kafka
-Если Kafka не запускается:
+## Проверка подключения
 
-1. **Проверьте конфигурацию:**
+### Тест подключения к PostgreSQL:
 ```bash
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+# Из контейнера
+docker exec -it telegram_app_prod bash
+apt-get update && apt-get install -y postgresql-client
+psql -h host.docker.internal -U your_user -d telegram_db
 ```
 
-2. **Перезапустите Kafka:**
+### Проверка логов приложения:
 ```bash
-docker-compose restart kafka
+docker-compose -f docker-compose.prod.yml logs -f app | grep -i "database\|postgres\|hibernate"
 ```
 
-## Полезные команды
+## Возможные проблемы
 
-### Проверка статуса сервисов
+### 1. PostgreSQL не принимает подключения
+Проверьте `pg_hba.conf`:
 ```bash
-# Статус Docker контейнеров
-docker-compose ps
-
-# Логи приложения
-docker-compose logs -f app
-
-# Логи PostgreSQL
-docker-compose logs -f postgres
-
-# Логи Kafka
-docker-compose logs -f kafka
+sudo nano /etc/postgresql/*/main/pg_hba.conf
+```
+Добавьте строку:
+```
+host    all             all             172.17.0.0/16           md5
 ```
 
-### Очистка и пересборка
+### 2. Firewall блокирует подключения
 ```bash
-# Очистка проекта
-./gradlew clean
-
-# Пересборка
-./gradlew build
-
-# Пересборка Docker образа
-docker-compose build --no-cache
+sudo ufw allow 5432
 ```
 
-### Проверка здоровья приложения
+### 3. PostgreSQL не слушает внешние подключения
+Проверьте `postgresql.conf`:
 ```bash
-# Health check
-curl http://localhost:8080/actuator/health
-
-# Метрики
-curl http://localhost:8080/actuator/metrics
+sudo nano /etc/postgresql/*/main/postgresql.conf
+```
+Убедитесь, что:
+```
+listen_addresses = '*'
+port = 5432
 ```

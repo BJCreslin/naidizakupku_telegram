@@ -130,7 +130,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: DOCKER_IMAGE,DOCKER_TAG,GHCR_TOKEN,POSTGRES_URL,POSTGRES_USER,POSTGRES_PASSWORD
+          envs: DOCKER_IMAGE,DOCKER_TAG,GHCR_TOKEN,POSTGRES_URL,POSTGRES_USER,POSTGRES_PASSWORD,TELEGRAM_BOT_TOKEN,TELEGRAM_BOT_NAME
           script: |
             # Останавливаю старый контейнер
             docker stop telegram-app || true
@@ -151,15 +151,18 @@ jobs:
             echo "POSTGRES_USER: $POSTGRES_USER"
             echo "POSTGRES_PASSWORD: [HIDDEN]"
             
-            # Запускаю новый контейнер
+            # Запускаю новый контейнер с правильным подключением к локальной БД
             docker run -d \
               --name telegram-app \
               --restart unless-stopped \
               -p 8080:8080 \
-              -e POSTGRES_URL="$POSTGRES_URL" \
+              --add-host=host.docker.internal:host-gateway \
+              -e POSTGRES_URL="jdbc:postgresql://host.docker.internal:5432/telegram_db" \
               -e POSTGRES_USER="$POSTGRES_USER" \
               -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
               -e SPRING_PROFILES_ACTIVE=prod \
+              -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+              -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}" \
               -v /opt/telegram-app/logs:/app/logs \
               $DOCKER_IMAGE:latest
             

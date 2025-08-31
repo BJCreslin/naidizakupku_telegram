@@ -97,8 +97,16 @@ docker-compose up -d  # PostgreSQL + Kafka
 
 ### Продакшн
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+# Автоматический деплой через GitHub Actions
+# Приложение запускается в Docker контейнере и подключается к локальной PostgreSQL
 ```
+
+**Важно**: В продакшне PostgreSQL должен быть запущен локально на хосте, а приложение в контейнере подключается к нему через `host.docker.internal:5432`.
+
+### Исправления проблем развертывания
+- **Проблема с подключением к БД**: Исправлено использование `host.docker.internal` вместо IP адреса
+- **Убран явный диалект PostgreSQL**: Hibernate теперь автоматически определяет диалект
+- **Добавлен --add-host**: Для поддержки `host.docker.internal` на Linux в GitHub Actions
 
 ## Мониторинг и логирование
 - Логи приложения: `logs/application.log`
