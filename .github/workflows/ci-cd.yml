@@ -151,17 +151,16 @@ jobs:
             env | grep POSTGRES
             echo "============================"
             
-            # Запускаю новый контейнер с правильным подключением к локальной БД
-            docker run -d \
-              --name telegram-app \
-              --restart unless-stopped \
-              -p 8080:8080 \
-              --add-host=host.docker.internal:host-gateway \
-
-              -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
-              -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}" \
-              -v /opt/telegram-app/logs:/app/logs \
-              $DOCKER_IMAGE:latest
+                         # Запускаю новый контейнер с правильным подключением к локальной БД
+             docker run -d \
+               --name telegram-app \
+               --restart unless-stopped \
+               -p 8080:8080 \
+               --add-host=host.docker.internal:host-gateway \
+               -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+               -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}" \
+               -v /opt/telegram-app/logs:/app/logs \
+               $DOCKER_IMAGE:latest
             
             # Ждем запуска приложения
             echo "Waiting for application to start..."
