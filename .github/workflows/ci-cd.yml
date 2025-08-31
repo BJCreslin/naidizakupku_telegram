@@ -155,6 +155,10 @@ jobs:
             echo "DEBUG: POSTGRES_USER=${POSTGRES_USER}"
             echo "DEBUG: POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
             
+            echo "==== DEBUG ENV on SERVER ===="
+            env | grep POSTGRES
+            echo "============================"
+            
             # Запускаю новый контейнер с правильным подключением к локальной БД
             docker run -d \
               --name telegram-app \
