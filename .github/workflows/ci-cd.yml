@@ -132,6 +132,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           envs: DOCKER_IMAGE,DOCKER_TAG,GHCR_TOKEN,POSTGRES_URL,POSTGRES_USER,POSTGRES_PASSWORD,TELEGRAM_BOT_TOKEN,TELEGRAM_BOT_NAME
           script: |
+            env | sort
             # Останавливаю старый контейнер
             docker stop telegram-app || true
             docker rm telegram-app || true
@@ -150,6 +151,9 @@ jobs:
             echo "POSTGRES_URL: $POSTGRES_URL"
             echo "POSTGRES_USER: $POSTGRES_USER"
             echo "POSTGRES_PASSWORD: [HIDDEN]"
+            echo "DEBUG: POSTGRES_URL=${POSTGRES_URL}"
+            echo "DEBUG: POSTGRES_USER=${POSTGRES_USER}"
+            echo "DEBUG: POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
             
             # Запускаю новый контейнер с правильным подключением к локальной БД
             docker run -d \
