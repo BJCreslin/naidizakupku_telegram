@@ -8,7 +8,7 @@ spring:
 #    password: ${POSTGRES_PASSWORD:password}
 #    driver-class-name: org.postgresql.Driver
 
-    datasource:
+  datasource:
       url: jdbc:postgresql://host.docker.internal:5432/telegram_db
       username: bot
       password: bot_password
