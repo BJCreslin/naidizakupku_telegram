@@ -26,6 +26,21 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
         
+      - name: Check architecture documentation
+        run: |
+          if [ ! -f "ARCHITECTURE.md" ]; then
+            echo "❌ ARCHITECTURE.md file is missing!"
+            exit 1
+          fi
+          echo "✅ ARCHITECTURE.md file exists"
+          
+          # Проверяем синтаксис Markdown
+          if command -v markdownlint >/dev/null 2>&1; then
+            markdownlint ARCHITECTURE.md ARCHITECTURE_RULES.md
+          else
+            echo "⚠️  markdownlint not available, skipping syntax check"
+          fi
+        
       - name: Run tests
         run: ./gradlew test
         

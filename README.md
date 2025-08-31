@@ -67,16 +67,30 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 ## Архитектура
 
+Подробное описание архитектуры приложения находится в файле [ARCHITECTURE.md](ARCHITECTURE.md).
+
+### Основные компоненты
+
+- **KafkaService** - отправка сообщений в Kafka
+- **KafkaConsumerService** - обработка сообщений из Kafka
+- **UserService** - бизнес-логика пользователей
+
 ### Kafka Топики
 
 - **user-events** - события пользователей (регистрация, обновление, удаление)
 - **notifications** - уведомления для отправки пользователям
 
-### Сервисы
+### Поддержание документации
 
-- **KafkaService** - отправка сообщений в Kafka
-- **KafkaConsumerService** - обработка сообщений из Kafka
-- **UserService** - бизнес-логика пользователей
+Для поддержания архитектурной документации в актуальном состоянии:
+
+1. **Установите pre-commit hook:**
+   - **Linux/macOS:** `./scripts/install-pre-commit.sh`
+   - **Windows:** `scripts\install-pre-commit-windows.bat`
+
+2. **Следуйте правилам** из [ARCHITECTURE_RULES.md](ARCHITECTURE_RULES.md)
+
+3. **Обновляйте документацию** при изменении архитектуры
 
 ## API Endpoints
 
