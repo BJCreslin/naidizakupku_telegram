@@ -131,6 +131,11 @@ jobs:
             docker pull $DOCKER_IMAGE:$DOCKER_TAG
             docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
             
+            # Проверяем переменные окружения
+            echo "POSTGRES_URL: $POSTGRES_URL"
+            echo "POSTGRES_USER: $POSTGRES_USER"
+            echo "POSTGRES_PASSWORD: [HIDDEN]"
+            
             # Запускаю новый контейнер
             docker run -d \
               --name telegram-app \
@@ -146,6 +151,14 @@ jobs:
             # Ждем запуска приложения
             echo "Waiting for application to start..."
             sleep 60
+            
+            # Проверяем статус контейнера
+            echo "Container status:"
+            docker ps -a | grep telegram-app || echo "Container not found"
+            
+            # Проверяем логи контейнера
+            echo "Container logs:"
+            docker logs telegram-app || echo "No logs available yet"
             
             # Проверяем здоровье приложения
             echo "Checking application health..."
