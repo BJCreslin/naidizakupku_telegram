@@ -15,10 +15,7 @@ interface UserRepository : JpaRepository<User, Long> {
      */
     fun findByTelegramId(telegramId: Long): User?
     
-    /**
-     * Найти пользователя по username
-     */
-    fun findByUsername(username: String): User?
+
     
     /**
      * Проверить существование пользователя по Telegram ID
