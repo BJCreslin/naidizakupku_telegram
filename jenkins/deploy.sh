@@ -53,15 +53,15 @@ services:
       - POSTGRES_URL=${POSTGRES_URL}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - SPRING_PROFILES_ACTIVE=prod
     volumes:
       - ${REMOTE_PATH}/logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
 EOF
 
 # Запускаем новый контейнер
@@ -70,7 +70,7 @@ docker-compose -f ${REMOTE_PATH}/docker-compose.prod.yml up -d
 
 # Ждем запуска приложения
 echo "$(date): Waiting for application to start..." | tee -a ${LOG_FILE}
-sleep 30
+sleep 60
 
 # Проверяем здоровье приложения
 echo "$(date): Checking application health..." | tee -a ${LOG_FILE}
