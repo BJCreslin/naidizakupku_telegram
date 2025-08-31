@@ -166,8 +166,8 @@ jobs:
               -p 8080:8080 \
               --add-host=host.docker.internal:host-gateway \
               -e POSTGRES_URL="jdbc:postgresql://host.docker.internal:5432/telegram_db" \
-              -e POSTGRES_USER="$POSTGRES_USER" \
-              -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+              -e POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+              -e POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
               -e SPRING_PROFILES_ACTIVE=prod \
               -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}"  \
               -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}"  \
