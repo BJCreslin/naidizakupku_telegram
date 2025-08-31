@@ -57,7 +57,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 2. **Деплой на VPS:**
 ```bash
 # Запустите скрипт деплоя
-./jenkins/deploy-kafka.sh
+./scripts/deploy-kafka.sh
 ```
 
 3. **Проверьте работу:**
@@ -156,19 +156,48 @@ docker-compose logs -f zookeeper
 - Prometheus метрики: http://localhost:8080/actuator/prometheus
 - Health check: http://localhost:8080/actuator/health
 
+## CI/CD Pipeline
+
+Проект использует GitHub Actions для автоматического деплоя:
+
+### Workflow
+
+1. **Test** - запуск тестов на каждом PR
+2. **Build** - сборка Docker образа при мерже в main
+3. **Deploy** - автоматический деплой на VPS
+
+### Secrets
+
+Настройте следующие secrets в GitHub repository:
+
+- `REMOTE_HOST` - IP адрес VPS (5.44.40.79)
+- `REMOTE_USER` - пользователь для SSH (root)
+- `SSH_PRIVATE_KEY` - приватный SSH ключ
+- `GITFLIC_USER` - логин для GitFlic registry
+- `GITFLIC_PASS` - пароль для GitFlic registry
+- `POSTGRES_PASSWORD` - пароль от базы данных
+
+### Быстрое исправление
+
+Для быстрого исправления приложения используйте:
+
+```bash
+./scripts/fix-app.sh
+```
+
 ## Автозапуск на VPS
 
-Приложение настроено на автозапуск при перезагрузке VPS через systemd:
+Приложение настроено на автозапуск при перезагрузке VPS через Docker:
 
 ```bash
 # Проверить статус
-sudo systemctl status naidizakupku-telegram
+docker ps | grep telegram-app
 
 # Перезапустить
-sudo systemctl restart naidizakupku-telegram
+docker restart telegram-app
 
 # Посмотреть логи
-sudo journalctl -u naidizakupku-telegram -f
+docker logs telegram-app -f
 ```
 
 ## Разработка

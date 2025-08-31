@@ -79,7 +79,7 @@ cp env.example .env
 # Отредактируйте .env
 
 # Запустите деплой
-./jenkins/deploy-kafka.sh
+./scripts/deploy-kafka.sh
 ```
 
 3. **Проверка:**

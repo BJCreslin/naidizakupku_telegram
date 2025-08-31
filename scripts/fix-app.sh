@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Скрипт для исправления запущенного приложения
-# Использование: ./fix-app.sh
+# Использование: ./scripts/fix-app.sh
 
 set -e
 
@@ -31,7 +31,7 @@ ssh $VPS_USER@$VPS_IP "docker run -d \
   -e KAFKA_BOOTSTRAP_SERVERS=5.44.40.79:9092 \
   -e SPRING_PROFILES_ACTIVE=prod \
   -v /opt/telegram-app/logs:/app/logs \
-  ghcr.io/bjcreslin/naidizakupku-telegram:latest"
+  registry.gitflic.ru/project/bjcreslin/naidizakupku_telegram/telegram-app:latest"
 
 # Ждем запуска приложения
 echo "⏳ Ждем запуска приложения..."

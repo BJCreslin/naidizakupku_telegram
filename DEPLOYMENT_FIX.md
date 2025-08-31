@@ -43,7 +43,7 @@ logging:
     org.apache.kafka: OFF
 ```
 
-### 3. Обновление скрипта деплоя
+### 3. Обновление GitHub Actions workflow
 
 **Изменения в `.github/workflows/ci-cd.yml`**:
 
@@ -130,6 +130,14 @@ curl http://localhost:8081/actuator/health
 2. **Обновлен workflow** - использует `SPRING_PROFILES_ACTIVE=prod` вместо `KAFKA_BOOTSTRAP_SERVERS`
 3. **Улучшен health check** - 10 попыток с интервалом 10 секунд
 4. **Увеличено время ожидания** - 60 секунд для полного запуска приложения
+
+## Быстрое исправление
+
+Для быстрого исправления приложения используйте скрипт:
+
+```bash
+./scripts/fix-app.sh
+```
 
 ## Следующие шаги
 
