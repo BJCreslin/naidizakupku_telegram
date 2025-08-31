@@ -58,6 +58,33 @@ ssh $VPS_USER@$VPS_IP "cd $PROJECT_DIR && docker-compose -f $DOCKER_COMPOSE_FILE
 echo "💚 Проверяем здоровье Kafka..."
 ssh $VPS_USER@$VPS_IP "docker exec telegram_kafka_prod kafka-topics --bootstrap-server localhost:9092 --list || echo 'Kafka еще не готова'"
 
+# Останавливаем старое приложение
+echo "🛑 Останавливаем старое приложение..."
+ssh $VPS_USER@$VPS_IP "docker stop telegram-app || true"
+ssh $VPS_USER@$VPS_IP "docker rm telegram-app || true"
+
+# Запускаем приложение с правильными переменными окружения
+echo "🚀 Запускаем приложение с Kafka..."
+ssh $VPS_USER@$VPS_IP "docker run -d \
+  --name telegram-app \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -e POSTGRES_URL=jdbc:postgresql://5.44.40.79:5432/telegram_db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=your_password \
+  -e KAFKA_BOOTSTRAP_SERVERS=5.44.40.79:9092 \
+  -e SPRING_PROFILES_ACTIVE=prod \
+  -v /opt/telegram-app/logs:/app/logs \
+  ghcr.io/bjcreslin/naidizakupku-telegram:latest"
+
+# Ждем запуска приложения
+echo "⏳ Ждем запуска приложения..."
+sleep 10
+
+# Проверяем статус приложения
+echo "🔍 Проверяем статус приложения..."
+ssh $VPS_USER@$VPS_IP "docker ps | grep telegram-app"
+
 # Настраиваем автозапуск Docker при перезагрузке
 echo "⚙️ Настраиваем автозапуск Docker..."
 ssh $VPS_USER@$VPS_IP "systemctl enable docker"
@@ -90,7 +117,8 @@ echo "🎉 Деплой завершен!"
 echo "📊 Kafka UI доступен по адресу: http://$VPS_IP:8081"
 echo "🔌 Kafka доступна по адресу: $VPS_IP:9092"
 echo "🐘 PostgreSQL доступен по адресу: $VPS_IP:5432"
-echo "📝 Логи: ssh $VPS_USER@$VPS_IP 'docker-compose -f $PROJECT_DIR/$DOCKER_COMPOSE_FILE logs -f'"
+echo "🌐 Приложение доступно по адресу: http://$VPS_IP:8080"
+echo "📝 Логи: ssh $VPS_USER@$VPS_IP 'docker logs telegram-app -f'"
 echo ""
 echo "⚠️  Важно:"
 echo "   - PostgreSQL должен быть установлен и настроен на VPS"
