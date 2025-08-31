@@ -32,6 +32,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     
+    // JAXB API для Java 21
+    implementation("javax.xml.bind:jaxb-api:2.3.1")
+    implementation("org.glassfish.jaxb:jaxb-runtime:4.0.4")
+    
     runtimeOnly("org.postgresql:postgresql")
     
     testImplementation("org.springframework.boot:spring-boot-starter-test")

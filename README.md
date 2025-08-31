@@ -49,6 +49,19 @@ docker-compose up -d zookeeper kafka
 - Kafka UI: http://localhost:8081 (в продакшене)
 - Health check: http://localhost:8080/actuator/health
 
+### Устранение проблем
+
+Если возникают проблемы с запуском, см. [DEPLOYMENT_FIX.md](DEPLOYMENT_FIX.md)
+
+**Быстрое исправление проблемы с JAXB:**
+```bash
+# Linux/macOS
+./scripts/fix-jaxb-issue.sh
+
+# Windows
+scripts\fix-jaxb-issue.bat
+```
+
 ### Продакшен деплой на VPS
 
 1. **Подготовьте VPS:**
