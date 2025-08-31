@@ -113,13 +113,15 @@ cp env.example .env
 # Создать пользователя (отправляет user_registered событие)
 POST /api/users
 {
-  "username": "test_user",
-  "email": "test@example.com",
   "telegramId": 123456789
 }
 
 # Обновить пользователя (отправляет user_updated событие)
 PUT /api/users/{id}
+{
+  "telegramId": 123456789,
+  "active": true
+}
 
 # Удалить пользователя (отправляет user_deleted событие)
 DELETE /api/users/{id}

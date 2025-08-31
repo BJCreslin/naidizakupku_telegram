@@ -26,7 +26,6 @@ class KafkaService(
         logger.info("Отправляем сообщение в топик $topic с ключом $key: $jsonMessage")
         
         return kafkaTemplate.send(topic, key, jsonMessage)
-            .completable()
             .whenComplete { result, throwable ->
                 if (throwable != null) {
                     logger.error("Ошибка отправки сообщения в топик $topic", throwable)

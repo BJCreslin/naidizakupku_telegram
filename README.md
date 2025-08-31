@@ -86,8 +86,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 # Создать пользователя
 POST /api/users
 {
-  "username": "test_user",
-  "email": "test@example.com",
   "telegramId": 123456789
 }
 
@@ -96,6 +94,10 @@ GET /api/users/{id}
 
 # Обновить пользователя
 PUT /api/users/{id}
+{
+  "telegramId": 123456789,
+  "active": true
+}
 
 # Удалить пользователя
 DELETE /api/users/{id}

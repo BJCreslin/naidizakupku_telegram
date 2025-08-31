@@ -19,7 +19,7 @@ class UserService(
      * Создать нового пользователя
      */
     suspend fun createUser(user: User): User {
-        if (user.telegramId != null && userRepository.existsByTelegramId(user.telegramId)) {
+        if (userRepository.existsByTelegramId(user.telegramId)) {
             throw IllegalArgumentException("Пользователь с Telegram ID ${user.telegramId} уже существует")
         }
         
@@ -54,7 +54,7 @@ class UserService(
      * Получить пользователя по ID
      */
     suspend fun getUserById(id: Long): User {
-        return userRepository.findById(id)
+        return userRepository.findById(id).orElse(null)
             ?: throw IllegalArgumentException("Пользователь с ID $id не найден")
     }
     
@@ -72,10 +72,8 @@ class UserService(
         val existingUser = getUserById(id)
         
         val updatedUser = existingUser.copy(
-            username = user.username ?: existingUser.username,
-            email = user.email ?: existingUser.email,
-            telegramId = user.telegramId ?: existingUser.telegramId,
-            active = user.active ?: existingUser.active,
+            telegramId = user.telegramId,
+            active = user.active,
             updatedAt = LocalDateTime.now()
         )
         

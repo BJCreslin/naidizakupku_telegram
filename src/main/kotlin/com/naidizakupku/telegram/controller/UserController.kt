@@ -28,9 +28,7 @@ class UserController(
             userId = createdUser.id!!,
             eventType = "user_registered",
             data = mapOf(
-                "username" to createdUser.username,
-                "email" to (createdUser.email ?: ""),
-                "telegramId" to (createdUser.telegramId?.toString() ?: "")
+                "telegramId" to createdUser.telegramId.toString()
             )
         )
         
@@ -67,9 +65,7 @@ class UserController(
             userId = id,
             eventType = "user_updated",
             data = mapOf(
-                "username" to updatedUser.username,
-                "email" to (updatedUser.email ?: ""),
-                "telegramId" to (updatedUser.telegramId?.toString() ?: "")
+                "telegramId" to updatedUser.telegramId.toString()
             )
         )
         

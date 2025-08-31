@@ -30,7 +30,7 @@ class KafkaConsumerService(
     fun handleUserEvent(
         @Payload message: String,
         @Header(KafkaHeaders.RECEIVED_TOPIC) topic: String,
-        @Header(KafkaHeaders.RECEIVED_PARTITION_ID) partition: Int,
+        @Header(KafkaHeaders.PARTITION) partition: Int,
         @Header(KafkaHeaders.OFFSET) offset: Long,
         acknowledgment: Acknowledgment
     ) {
@@ -72,7 +72,7 @@ class KafkaConsumerService(
     fun handleNotification(
         @Payload message: String,
         @Header(KafkaHeaders.RECEIVED_TOPIC) topic: String,
-        @Header(KafkaHeaders.RECEIVED_PARTITION_ID) partition: Int,
+        @Header(KafkaHeaders.PARTITION) partition: Int,
         @Header(KafkaHeaders.OFFSET) offset: Long,
         acknowledgment: Acknowledgment
     ) {
