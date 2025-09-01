@@ -147,11 +147,8 @@ jobs:
             docker pull $DOCKER_IMAGE:$DOCKER_TAG
             docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
                    
-            echo "==== DEBUG ENV on SERVER ===="
-            env | grep POSTGRES
-            echo "============================"
             
-                         # Запускаю новый контейнер с правильным подключением к локальной БД
+            # Запускаю новый контейнер с правильным подключением к локальной БД
              docker run -d \
                --add-host=host.docker.internal:host-gateway \
                --name telegram-app \
@@ -159,6 +156,9 @@ jobs:
                -p 8080:8080 \
                -e TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
                -e TELEGRAM_BOT_NAME="${{ secrets.TELEGRAM_BOT_NAME }}" \
+               -e POSTGRES_URL="$POSTGRES_URL" \
+               -e POSTGRES_USER="$POSTGRES_USER" \
+               -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
                -v /opt/telegram-app/logs:/app/logs \
                $DOCKER_IMAGE:latest
             
