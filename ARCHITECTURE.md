@@ -50,15 +50,30 @@ Telegram Bot API → TelegramBotService → UserService → UserRepository → P
 
 ## Структура базы данных
 
+### База данных `telegram_db`
+- **Тип**: PostgreSQL
+- **Кодировка**: UTF-8
+- **Владелец**: postgres (по умолчанию)
+
 ### Таблица `users`
-- `id` (BIGINT, PRIMARY KEY) - уникальный идентификатор
-- `telegram_id` (BIGINT, UNIQUE) - ID пользователя в Telegram
+- `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT) - уникальный идентификатор
+- `telegram_id` (BIGINT, UNIQUE, NOT NULL) - ID пользователя в Telegram
 - `first_name` (VARCHAR(255)) - имя пользователя
 - `last_name` (VARCHAR(255)) - фамилия пользователя
 - `username` (VARCHAR(255)) - username пользователя
-- `created_at` (TIMESTAMP) - время создания записи
-- `updated_at` (TIMESTAMP) - время последнего обновления
-- `active` (BOOLEAN) - статус активности пользователя
+- `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время создания записи
+- `updated_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время последнего обновления
+- `active` (BOOLEAN, DEFAULT TRUE) - статус активности пользователя
+
+### Индексы
+- `idx_users_telegram_id` - уникальный индекс по telegram_id
+- `idx_users_username` - индекс по username (для быстрого поиска)
+- `idx_users_active` - индекс по active (для фильтрации активных пользователей)
+
+### Миграции
+- **001-create-users-table.xml** - создание таблицы users
+- **002-add-user-fields.xml** - добавление дополнительных полей
+- **002-remove-user-fields.xml** - удаление неиспользуемых полей
 
 ## Kafka Topics
 
@@ -76,16 +91,49 @@ Telegram Bot API → TelegramBotService → UserService → UserRepository → P
 - Профили: dev, test, prod
 - Логирование: SLF4J + Logback
 
+### Конфигурация базы данных
+- **PostgreSQL**: Основная БД для продакшна и разработки
+- **H2**: In-memory БД для тестов
+- **Liquibase**: Управление миграциями БД
+- **JPA/Hibernate**: ORM с автоматическим определением диалекта
+- **Подключение**: Через переменные окружения с fallback значениями
+
+### Конфигурация Kafka
+- **KRaft режим**: Без Zookeeper
+- **Локальная разработка**: localhost:9092
+- **Docker Compose**: kafka:29092
+- **Аутентификация**: Опциональная через SASL/PLAIN
+
 ### Переменные окружения
-- `POSTGRES_USER` - пользователь PostgreSQL
-- `POSTGRES_PASSWORD` - пароль PostgreSQL
-- `POSTGRES_URL` - URL подключения к PostgreSQL
+
+#### База данных PostgreSQL
+- `POSTGRES_DB` - название базы данных (по умолчанию: telegram_db)
+- `POSTGRES_USER` - пользователь PostgreSQL (по умолчанию: postgres)
+- `POSTGRES_PASSWORD` - пароль PostgreSQL (обязательно указать)
+- `POSTGRES_URL` - полный URL подключения к PostgreSQL
+  - Локальная разработка: `jdbc:postgresql://localhost:5432/telegram_db`
+  - Docker Compose: `jdbc:postgresql://postgres:5432/telegram_db`
+  - Продакшн: `jdbc:postgresql://host.docker.internal:5432/telegram_db`
+
+#### Apache Kafka
 - `KAFKA_BOOTSTRAP_SERVERS` - адреса Kafka серверов
-- `KAFKA_USER` - пользователь Kafka
-- `KAFKA_PASSWORD` - пароль Kafka
-- `TELEGRAM_BOT_TOKEN` - токен Telegram бота
-- `TELEGRAM_BOT_NAME` - имя Telegram бота
-- `TELEGRAM_BOT_USERNAME` - username Telegram бота
+  - Локальная разработка: `localhost:9092`
+  - Docker Compose: `kafka:29092`
+- `KAFKA_USER` - пользователь Kafka (опционально, для аутентификации)
+- `KAFKA_PASSWORD` - пароль Kafka (опционально, для аутентификации)
+
+#### Telegram Bot
+- `TELEGRAM_BOT_TOKEN` - токен Telegram бота (обязательно)
+- `TELEGRAM_BOT_NAME` - имя Telegram бота (опционально)
+- `TELEGRAM_BOT_USERNAME` - username Telegram бота (опционально)
+
+#### Приложение
+- `SERVER_PORT` - порт приложения (по умолчанию: 8080)
+- `SPRING_PROFILES_ACTIVE` - активный профиль Spring (dev/test/prod)
+
+#### Продакшн (VPS)
+- `VPS_IP` - IP адрес VPS сервера
+- `VPS_USER` - пользователь для подключения к VPS
 
 ## Развертывание
 
