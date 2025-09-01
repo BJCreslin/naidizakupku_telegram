@@ -28,6 +28,16 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       retries: 3
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      group-id: naidizakupku-telegram-consumer
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 3000
+        max.poll.records: 500
   
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml

@@ -144,6 +144,12 @@ Telegram Bot API → TelegramBotService → UserService → UserRepository → P
 - Профили: dev, test, prod
 - Логирование: SLF4J + Logback
 
+### Продакшн профиль (`application-prod.yml`)
+- Пониженный уровень логирования Kafka (WARN вместо INFO)
+- Отключены SQL логи Hibernate
+- Ограниченные endpoints мониторинга (только health, info)
+- Увеличен размер лог-файлов (50MB) с сокращенной историей (7 дней)
+
 ### Конфигурация базы данных
 - **PostgreSQL**: Основная БД для продакшна и разработки
 - **H2**: In-memory БД для тестов
@@ -213,6 +219,11 @@ docker-compose up -d  # PostgreSQL + Kafka
 - Логи приложения: `logs/application.log`
 - Метрики Spring Boot Actuator
 - Health checks для всех компонентов
+
+### Уровни логирования по профилям
+- **dev**: INFO для всех компонентов, включая Kafka и Hibernate
+- **prod**: WARN для Kafka, Hibernate и Spring Framework, INFO для основного приложения
+- **test**: INFO для всех компонентов
 
 ## Безопасность
 - Чувствительные данные в переменных окружения
