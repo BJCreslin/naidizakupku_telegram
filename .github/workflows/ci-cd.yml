@@ -159,6 +159,9 @@ jobs:
                -e POSTGRES_URL="$POSTGRES_URL" \
                -e POSTGRES_USER="$POSTGRES_USER" \
                -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+               -e KAFKA_BOOTSTRAP_SERVERS = "${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}" \
+               -e KAFKA_USER = "${{ secrets.KAFKA_USER }}" \
+               -e KAFKA_PASSWORD = "${{ secrets.KAFKA_PASSWORD }}" \
                -v /opt/telegram-app/logs:/app/logs \
                $DOCKER_IMAGE:latest
             

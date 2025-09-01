@@ -25,7 +25,8 @@ Telegram-бот для поиска и покупки товаров с инте
 **Назначение**: Бизнес-логика приложения
 - `TelegramBotService.kt` - основной сервис Telegram бота с эхо-функцией
 - `UserService.kt` - управление пользователями
-- `KafkaService.kt` - работа с Kafka для асинхронной обработки
+- `KafkaService.kt` - отправка сообщений в Kafka топики
+- `KafkaConsumerService.kt` - потребление сообщений из Kafka топиков
 
 ### 3. Repository Layer (`repository/`)
 **Назначение**: Доступ к данным
@@ -37,16 +38,23 @@ Telegram-бот для поиска и покупки товаров с инте
 
 ### 5. Config Layer (`config/`)
 **Назначение**: Конфигурация приложения
-- `KafkaConfig.kt` - настройки Kafka
+- `KafkaConfig.kt` - настройки Kafka, создание топиков (user-events, notifications)
 - `TelegramConfig.kt` - настройки Telegram Bot (токен, имя, username)
 
 ## Поток данных
 
+### Основной поток
 ```
 Telegram Bot API → TelegramBotService → UserService → UserRepository → PostgreSQL
                                     ↓
-                              KafkaService → Kafka → Асинхронная обработка
+                              KafkaService → Kafka → KafkaConsumerService
 ```
+
+### Kafka потоки
+- **Отправка событий**: `KafkaService.sendUserEvent()` → `user-events` топик
+- **Отправка уведомлений**: `KafkaService.sendNotification()` → `notifications` топик
+- **Потребление событий**: `user-events` топик → `KafkaConsumerService.handleUserEvent()`
+- **Потребление уведомлений**: `notifications` топик → `KafkaConsumerService.handleNotification()`
 
 ## Структура базы данных
 
@@ -77,12 +85,57 @@ Telegram Bot API → TelegramBotService → UserService → UserRepository → P
 
 ## Kafka Topics
 
-### Входящие сообщения
-- `telegram.messages` - входящие сообщения от пользователей
+### Топики для событий пользователей
+- `user-events` - события пользователей (регистрация, вход, выход)
+  - **Структура сообщения**: JSON с полями `userId`, `eventType`, `timestamp`, `data`
+  - **Типы событий**: `user_registered`, `user_login`, `user_logout`
+  - **Партиции**: 3
+  - **Реплики**: 1
 
-### Исходящие сообщения
-- `telegram.responses` - ответы пользователям
-- `telegram.notifications` - уведомления
+### Топики для уведомлений
+- `notifications` - уведомления пользователям
+  - **Структура сообщения**: JSON с полями `userId`, `message`, `type`, `timestamp`
+  - **Типы уведомлений**: `info`, `warning`, `error`
+  - **Партиции**: 3
+  - **Реплики**: 1
+
+### Конфигурация топиков
+- **Consumer Group**: `naidizakupku-telegram-consumer`
+- **Auto Offset Reset**: `earliest`
+- **Enable Auto Commit**: `false` (ручное подтверждение)
+- **Max Poll Records**: 500
+- **Session Timeout**: 30000ms
+- **Heartbeat Interval**: 3000ms
+
+### Команды создания топиков
+```bash
+# Создание топика user-events
+/opt/kafka/bin/kafka-topics.sh \
+  --create \
+  --bootstrap-server 5.44.40.79:9092 \
+  --replication-factor 1 \
+  --partitions 3 \
+  --config compression.type=zstd \
+  --config retention.ms=604800000 \
+  --config max.message.bytes=10485760 \
+  --topic user-events
+
+# Создание топика notifications
+/opt/kafka/bin/kafka-topics.sh \
+  --create \
+  --bootstrap-server 5.44.40.79:9092 \
+  --replication-factor 1 \
+  --partitions 3 \
+  --config compression.type=zstd \
+  --config retention.ms=604800000 \
+  --config max.message.bytes=10485760 \
+  --topic notifications
+```
+
+### Настройки топиков
+- **Compression**: zstd (высокая степень сжатия)
+- **Retention**: 7 дней (604800000 мс)
+- **Max Message Size**: 10MB (10485760 байт)
 
 ## Конфигурация
 

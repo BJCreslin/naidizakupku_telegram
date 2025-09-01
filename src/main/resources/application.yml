@@ -2,12 +2,6 @@ spring:
   application:
     name: naidizakupku-telegram
   
-#  datasource:
-#    url: ${POSTGRES_URL:jdbc:postgresql://postgres:5432/telegram_db}
-#    username: ${POSTGRES_USER:postgres}
-#    password: ${POSTGRES_PASSWORD:password}
-#    driver-class-name: org.postgresql.Driver
-
   datasource:
       url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/telegram_db}
       username: ${POSTGRES_USER:}
@@ -25,7 +19,7 @@ spring:
     defer-datasource-initialization: false
   
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:}
     security:
       username: ${KAFKA_USER:}
       password: ${KAFKA_PASSWORD:}
