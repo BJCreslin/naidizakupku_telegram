@@ -19,6 +19,12 @@ if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
     exit 1
 fi
 
+if [ -z "$KAFKA_BOOTSTRAP_SERVERS" ] || [ -z "$KAFKA_USER" ] || [ -z "$KAFKA_PASSWORD" ]; then
+    echo "❌ Не установлены переменные окружения для Kafka"
+    echo "Установите: KAFKA_BOOTSTRAP_SERVERS, KAFKA_USER, KAFKA_PASSWORD"
+    exit 1
+fi
+
 # Останавливаем старый контейнер
 echo "🛑 Останавливаем старый контейнер..."
 docker stop telegram-app || true
@@ -55,6 +61,9 @@ docker run -d \
   -e TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" \
   -e TELEGRAM_BOT_NAME="$TELEGRAM_BOT_NAME" \
   -e TELEGRAM_BOT_USERNAME="$TELEGRAM_BOT_USERNAME" \
+  -e KAFKA_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
+  -e KAFKA_USER="$KAFKA_USER" \
+  -e KAFKA_PASSWORD="$KAFKA_PASSWORD" \
   -v /opt/telegram-app/logs:/app/logs \
   ghcr.io/bjcreslin/naidizakupku-telegram:latest
 
