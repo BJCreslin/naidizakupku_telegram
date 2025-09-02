@@ -19,8 +19,8 @@ import jakarta.annotation.PostConstruct
 /**
  * Конфигурация Kafka
  */
-@Configuration
-@ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"], matchIfMissing = false)
+// @Configuration
+// @ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"], matchIfMissing = false)
 class KafkaConfig {
     
     private val logger = LoggerFactory.getLogger(KafkaConfig::class.java)
