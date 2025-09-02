@@ -18,17 +18,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 class TelegramBotService(
     private val telegramConfig: TelegramConfig,
     private val userService: UserServiceInterface
-) : TelegramLongPollingBot() {
+) : TelegramLongPollingBot(telegramConfig.botToken) {
 
     private val logger = LoggerFactory.getLogger(TelegramBotService::class.java)
-
-    override fun getBotToken(): String {
-        val token = System.getenv("TELEGRAM_BOT_TOKEN") ?: telegramConfig.botToken
-        if (token.isBlank()) {
-            logger.warn("Telegram bot token is not configured")
-        }
-        return token
-    }
 
     override fun getBotUsername(): String {
         val username = System.getenv("TELEGRAM_BOT_NAME") ?: telegramConfig.botName
