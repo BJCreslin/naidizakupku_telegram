@@ -28,6 +28,7 @@ Telegram-бот для поиска и покупки товаров с инте
 - `KafkaService.kt` - отправка сообщений в Kafka топики
 - `KafkaConsumerService.kt` - потребление сообщений из Kafka топиков
 - `StartupInfoService.kt` - отображение параметров подключений и интеграций при старте приложения
+- `DatabaseHealthService.kt` - проверка здоровья базы данных и проверка таблиц
 
 ### 3. Repository Layer (`repository/`)
 **Назначение**: Доступ к данным

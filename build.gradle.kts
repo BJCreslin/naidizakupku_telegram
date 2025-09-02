@@ -25,6 +25,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.liquibase:liquibase-core")
     
     implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

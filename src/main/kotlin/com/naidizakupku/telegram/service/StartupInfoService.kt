@@ -1,6 +1,7 @@
 package com.naidizakupku.telegram.service
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
@@ -11,11 +12,17 @@ class StartupInfoService {
     
     private val logger = LoggerFactory.getLogger(StartupInfoService::class.java)
     
+    @Autowired
+    private lateinit var databaseHealthService: DatabaseHealthService
+    
     @Value("\${spring.datasource.url:}")
     private lateinit var databaseUrl: String
     
     @Value("\${spring.datasource.username:}")
     private lateinit var databaseUsername: String
+    
+    @Value("\${spring.datasource.password:}")
+    private lateinit var databasePassword: String
     
     @Value("\${spring.kafka.bootstrap-servers:}")
     private lateinit var kafkaBootstrapServers: String
@@ -47,8 +54,9 @@ class StartupInfoService {
         
         // База данных
         logger.info("🗄️  БАЗА ДАННЫХ:")
-        logger.info("   URL: $databaseUrl")
-        logger.info("   Пользователь: $databaseUsername")
+        logger.info("   URL: ${maskSensitiveData(databaseUrl)}")
+        logger.info("   Пользователь: ${maskSensitiveData(databaseUsername)}")
+        logger.info("   Пароль: ${maskSensitiveData(databasePassword)}")
         
         // Kafka
         logger.info("📨 KAFKA:")
@@ -63,6 +71,10 @@ class StartupInfoService {
         // Статус подключений
         logger.info("🔌 СТАТУС ПОДКЛЮЧЕНИЙ:")
         logConnectionStatus()
+        
+        // Проверка здоровья БД
+        logger.info("🏥 ПРОВЕРКА ЗДОРОВЬЯ БД:")
+        databaseHealthService.checkDatabaseConnection()
         
         logger.info("=".repeat(60))
     }
