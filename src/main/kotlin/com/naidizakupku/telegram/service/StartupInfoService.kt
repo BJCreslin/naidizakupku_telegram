@@ -23,7 +23,7 @@ class StartupInfoService {
     @Value("\${spring.kafka.properties.security.protocol:}")
     private lateinit var kafkaSecurityProtocol: String
     
-    @Value("\${telegram.bot.username:}")
+    @Value("\${telegram.bot.name:}")
     private lateinit var telegramBotUsername: String
     
     @Value("\${telegram.bot.token:}")
@@ -47,8 +47,8 @@ class StartupInfoService {
         
         // База данных
         logger.info("🗄️  БАЗА ДАННЫХ:")
-        logger.info("   URL: ${maskSensitiveData(databaseUrl)}")
-        logger.info("   Пользователь: ${maskSensitiveData(databaseUsername)}")
+        logger.info("   URL: $databaseUrl")
+        logger.info("   Пользователь: $databaseUsername")
         
         // Kafka
         logger.info("📨 KAFKA:")
@@ -57,7 +57,7 @@ class StartupInfoService {
         
         // Telegram Bot
         logger.info("🤖 TELEGRAM BOT:")
-        logger.info("   Username: $telegramBotUsername")
+        logger.info("   Name: $telegramBotUsername")
         logger.info("   Токен: ${maskSensitiveData(telegramBotToken)}")
         
         // Статус подключений
