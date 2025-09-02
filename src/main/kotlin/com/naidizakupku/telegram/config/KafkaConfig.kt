@@ -13,6 +13,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.config.TopicBuilder
 import org.springframework.kafka.core.*
 import org.springframework.kafka.listener.ContainerProperties
+import org.slf4j.LoggerFactory
 
 /**
  * Конфигурация Kafka
@@ -20,6 +21,8 @@ import org.springframework.kafka.listener.ContainerProperties
 @Configuration
 @ConditionalOnProperty(name = ["spring.kafka.bootstrap-servers"], matchIfMissing = false)
 class KafkaConfig {
+    
+    private val logger = LoggerFactory.getLogger(KafkaConfig::class.java)
     
     @Value("\${spring.kafka.bootstrap-servers}")
     private lateinit var bootstrapServers: String
@@ -33,6 +36,12 @@ class KafkaConfig {
     @Value("\${spring.kafka.consumer.group-id:naidizakupku-telegram-consumer}")
     private lateinit var groupId: String
     
+    init {
+        logger.info("Инициализация Kafka конфигурации для серверов: $bootstrapServers")
+        logger.info("Username: '${if (username.isBlank()) "не указан" else username}'")
+        logger.info("Password: '${if (password.isBlank()) "не указан" else "***"}'")
+    }
+    
     /**
      * Конфигурация Producer Factory
      */
@@ -43,11 +52,14 @@ class KafkaConfig {
         configProps[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
         configProps[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
         
-        // Настройки безопасности если указаны
-        if (username.isNotEmpty() && password.isNotEmpty()) {
+        // Настройки безопасности только если указаны username и password
+        if (username.isNotBlank() && password.isNotBlank()) {
             configProps["security.protocol"] = "SASL_SSL"
             configProps["sasl.mechanism"] = "PLAIN"
             configProps["sasl.jaas.config"] = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$username\" password=\"$password\";"
+        } else {
+            // Для PLAINTEXT подключения без аутентификации
+            configProps["security.protocol"] = "PLAINTEXT"
         }
         
         return DefaultKafkaProducerFactory(configProps)
@@ -69,11 +81,14 @@ class KafkaConfig {
         configProps[ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG] = "30000"
         configProps[ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG] = "3000"
         
-        // Настройки безопасности если указаны
-        if (username.isNotEmpty() && password.isNotEmpty()) {
+        // Настройки безопасности только если указаны username и password
+        if (username.isNotBlank() && password.isNotBlank()) {
             configProps["security.protocol"] = "SASL_SSL"
             configProps["sasl.mechanism"] = "PLAIN"
             configProps["sasl.jaas.config"] = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$username\" password=\"$password\";"
+        } else {
+            // Для PLAINTEXT подключения без аутентификации
+            configProps["security.protocol"] = "PLAINTEXT"
         }
         
         return DefaultKafkaConsumerFactory(configProps)
