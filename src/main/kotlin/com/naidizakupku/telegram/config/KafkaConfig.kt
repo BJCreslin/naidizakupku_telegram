@@ -14,6 +14,7 @@ import org.springframework.kafka.config.TopicBuilder
 import org.springframework.kafka.core.*
 import org.springframework.kafka.listener.ContainerProperties
 import org.slf4j.LoggerFactory
+import jakarta.annotation.PostConstruct
 
 /**
  * Конфигурация Kafka
@@ -36,7 +37,8 @@ class KafkaConfig {
     @Value("\${spring.kafka.consumer.group-id:naidizakupku-telegram-consumer}")
     private lateinit var groupId: String
     
-    init {
+    @PostConstruct
+    fun init() {
         logger.info("Инициализация Kafka конфигурации для серверов: $bootstrapServers")
         logger.info("Username: '${if (username.isBlank()) "не указан" else username}'")
         logger.info("Password: '${if (password.isBlank()) "не указан" else "***"}'")
