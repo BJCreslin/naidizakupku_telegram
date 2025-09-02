@@ -1,0 +1,65 @@
+# Продакшн профиль с пониженным логированием
+spring:
+  profiles:
+    active: prod
+  
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      group-id: naidizakupku-telegram-consumer
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 3000
+        max.poll.records: 500
+
+logging:
+  level:
+    # Основное приложение
+    com.naidizakupku.telegram: INFO
+    
+    # Kafka - понижаем уровень логирования для продакшна
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    kafka: WARN
+    
+    # Spring Framework
+    org.springframework: WARN
+    
+    # Hibernate - убираем SQL логи в продакшне
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    
+    # Telegram
+    org.telegram: WARN
+    
+    # Общие библиотеки
+    org.apache.commons: WARN
+    com.fasterxml.jackson: WARN
+    
+    # Root logger
+    root: WARN
+  
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  
+  file:
+    name: logs/application.log
+    max-size: 50MB
+    max-history: 7
+
+# Продакшн настройки
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
