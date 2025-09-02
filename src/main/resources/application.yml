@@ -65,7 +65,6 @@ telegram:
   bot:
     token: ${TELEGRAM_BOT_TOKEN:}
     name: ${TELEGRAM_BOT_NAME:}
-    username: ${TELEGRAM_BOT_USERNAME:}
 
 logging:
   level:
