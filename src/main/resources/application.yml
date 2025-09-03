@@ -38,6 +38,24 @@ spring:
         session.timeout.ms: 30000
         heartbeat.interval.ms: 3000
         max.poll.records: 500
+
+# Kafka конфигурация для верификации
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  consumer:
+    group-id: telegram-bot-verification
+    auto-offset-reset: latest
+  topics:
+    verification-request: code-verification-request
+    verification-response: code-verification-response
+    revoke-request: authorization-revoke-request
+    revoke-response: authorization-revoke-response
+
+# Настройки верификации
+verification:
+  session:
+    cleanup:
+      minutes: 30
   
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml

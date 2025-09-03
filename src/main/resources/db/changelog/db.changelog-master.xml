@@ -7,6 +7,7 @@
 
     <include file="db/changelog/changes/001-create-users-table.xml"/>
     <include file="db/changelog/changes/002-create-user-codes-table.xml"/>
+    <include file="db/changelog/changes/003-create-verification-sessions-table.xml"/>
 
 </databaseChangeLog>
 
