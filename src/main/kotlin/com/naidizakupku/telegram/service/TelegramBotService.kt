@@ -1,6 +1,7 @@
 package com.naidizakupku.telegram.service
 
 import com.naidizakupku.telegram.config.TelegramConfig
+import com.naidizakupku.telegram.handler.TelegramCodeHandler
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -17,7 +18,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 @ConditionalOnProperty(name = ["telegram.bot.token"])
 class TelegramBotService(
     private val telegramConfig: TelegramConfig,
-    private val userService: UserServiceInterface
+    private val userService: UserServiceInterface,
+    private val telegramCodeHandler: TelegramCodeHandler
 ) : TelegramLongPollingBot(telegramConfig.botToken) {
 
     private val logger = LoggerFactory.getLogger(TelegramBotService::class.java)
@@ -50,11 +52,20 @@ class TelegramBotService(
                     )
                 }
 
-                // Эхо-функция
-                val response = "Эхо: $text"
-                sendMessage(chatId, response)
-
-                logger.info("Отправлен ответ пользователю $userId: $response")
+                // Обработка команд
+                when {
+                    text.startsWith("/code") -> {
+                        val responseMessage = telegramCodeHandler.handleCodeCommand(update)
+                        execute(responseMessage)
+                        logger.info("Отправлен код пользователю $userId")
+                    }
+                    else -> {
+                        // Эхо-функция для остальных сообщений
+                        val response = "Эхо: $text"
+                        sendMessage(chatId, response)
+                        logger.info("Отправлен ответ пользователю $userId: $response")
+                    }
+                }
             }
         } catch (e: Exception) {
             logger.error("Ошибка при обработке сообщения", e)

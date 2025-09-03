@@ -65,6 +65,9 @@ telegram:
   bot:
     token: ${TELEGRAM_BOT_TOKEN:}
     name: ${TELEGRAM_BOT_NAME:}
+  code:
+    expiration:
+      minutes: ${TELEGRAM_CODE_EXPIRATION_MINUTES:5}
 
 logging:
   level:
