@@ -43,14 +43,14 @@ class CodeGenerationServiceTest : FunSpec({
     
     test("generateUniqueCode должен генерировать новый код при конфликте") {
         // Given
-        every { mockUserCodeRepository.existsByCodeAndNotExpired("1234567", any()) } returns true
-        every { mockUserCodeRepository.existsByCodeAndNotExpired("7654321", any()) } returns false
+        every { mockUserCodeRepository.existsByCodeAndNotExpired(any(), any()) } returnsMany listOf(true, false)
         
         // When
         val code = codeGenerationService.generateUniqueCode()
         
         // Then
-        code shouldBe "7654321"
+        code.length shouldBe 7
+        code.toIntOrNull() shouldNotBe null
         verify(exactly = 2) { mockUserCodeRepository.existsByCodeAndNotExpired(any(), any()) }
     }
     

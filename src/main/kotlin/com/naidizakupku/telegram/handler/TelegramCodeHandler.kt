@@ -1,6 +1,7 @@
 package com.naidizakupku.telegram.handler
 
 import com.naidizakupku.telegram.service.UserCodeService
+import com.naidizakupku.telegram.service.UserCodeResponse
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -31,22 +32,22 @@ class TelegramCodeHandler(
             val message = buildCodeMessage(userCodeResponse)
             
             return SendMessage().apply {
-                chatId = chatId
-                text = message
-                parseMode = "HTML"
+                this.chatId = chatId
+                this.text = message
+                this.parseMode = "HTML"
             }
             
         } catch (e: Exception) {
             logger.error("Ошибка при обработке команды /code для пользователя ${user.id}", e)
             
             return SendMessage().apply {
-                chatId = chatId
-                text = "❌ Произошла ошибка при генерации кода. Попробуйте позже."
+                this.chatId = chatId
+                this.text = "❌ Произошла ошибка при генерации кода. Попробуйте позже."
             }
         }
     }
     
-    private fun buildCodeMessage(response: UserCodeService.UserCodeResponse): String {
+    private fun buildCodeMessage(response: UserCodeResponse): String {
         val statusIcon = if (response.isNew) "🆕" else "🔑"
         val statusText = if (response.isNew) "Сгенерирован новый код" else "Ваш код"
         
