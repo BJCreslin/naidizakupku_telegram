@@ -12,7 +12,6 @@ Telegram-бот для поиска и покупки товаров с инте
 - **Миграции**: Liquibase
 - **Очереди сообщений**: Apache Kafka + Spring for Kafka
 - **Планировщик**: Spring Scheduling для автоматических задач
-- **Тестирование**: Kotest + Mockk
 - **Контейнеризация**: Docker
 - **CI/CD**: GitHub Actions
 
@@ -41,9 +40,6 @@ src/main/resources/
     └── changes/
         └── 002-create-user-codes-table.xml  # Миграция таблицы user_codes
 
-src/test/kotlin/com/naidizakupku/telegram/service/
-├── UserCodeServiceTest.kt             # Тесты для UserCodeService
-└── CodeGenerationServiceTest.kt       # Тесты для CodeGenerationService
 ```
 
 ### Структура файлов для функционала верификации
@@ -69,7 +65,7 @@ src/main/kotlin/com/naidizakupku/telegram/
 ├── scheduler/
 │   └── VerificationSessionCleanupScheduler.kt # Очистка просроченных сессий
 ├── controller/
-│   └── VerificationController.kt      # REST API для тестирования
+│   └── VerificationController.kt      # REST API для верификации
 └── config/
     └── KafkaConfig.kt                 # Конфигурация Kafka для верификации
 
@@ -79,9 +75,6 @@ src/main/resources/
     └── changes/
         └── 003-create-verification-sessions-table.xml # Миграция таблицы verification_sessions
 
-src/test/kotlin/com/naidizakupku/telegram/service/
-├── VerificationSessionServiceTest.kt  # Тесты для VerificationSessionService
-└── KafkaVerificationServiceTest.kt   # Тесты для KafkaVerificationService
 ```
 
 ### 1. Controller Layer (`controller/`)
@@ -334,7 +327,7 @@ Kafka → VerificationRequestListener → KafkaVerificationService → Verificat
 
 ### Основные настройки (`application.yml`)
 - Порт приложения: 8080
-- Профили: dev, test, prod
+- Профили: dev, prod
 - Логирование: SLF4J + Logback
 - Планировщик: @EnableScheduling для автоматических задач
 - Kafka верификация: Отдельная конфигурация для топиков верификации
@@ -347,7 +340,6 @@ Kafka → VerificationRequestListener → KafkaVerificationService → Verificat
 
 ### Конфигурация базы данных
 - **PostgreSQL**: Основная БД для продакшна и разработки
-- **H2**: In-memory БД для тестов
 - **Liquibase**: Управление миграциями БД
 - **JPA/Hibernate**: ORM с автоматическим определением диалекта
 - **Подключение**: Через переменные окружения с fallback значениями
@@ -405,7 +397,7 @@ Kafka → VerificationRequestListener → KafkaVerificationService → Verificat
 
 #### Приложение
 - `SERVER_PORT` - порт приложения (по умолчанию: 8080)
-- `SPRING_PROFILES_ACTIVE` - активный профиль Spring (dev/test/prod)
+- `SPRING_PROFILES_ACTIVE` - активный профиль Spring (dev/prod)
 
 #### Продакшн (VPS)
 - `VPS_IP` - IP адрес VPS сервера
@@ -460,7 +452,6 @@ docker-compose up -d  # PostgreSQL + Kafka
 ### Уровни логирования по профилям
 - **dev**: INFO для всех компонентов, включая Kafka и Hibernate
 - **prod**: WARN для Kafka, Hibernate и Spring Framework, INFO для основного приложения
-- **test**: INFO для всех компонентов
 
 ### Логирование верификации
 - **Kafka операции**: INFO уровень с correlationId для отслеживания
@@ -593,22 +584,9 @@ docker-compose up -d  # PostgreSQL + Kafka
 - Локализация: Поддержка разных форматов времени для разных регионов
 - Синхронизация: Автоматическое обновление времени в сообщениях верификации
 
-## Тестирование
-- Unit тесты: Kotest + Mockk
-  - `UserCodeServiceTest.kt` - тесты для сервиса управления кодами
-  - `CodeGenerationServiceTest.kt` - тесты для сервиса генерации кодов
-  - `VerificationSessionServiceTest.kt` - тесты для сервиса управления сессиями верификации
-  - `KafkaVerificationServiceTest.kt` - тесты для основного сервиса верификации через Kafka
-- Integration тесты: TestContainers
-- End-to-end тесты: Telegram Bot API моки
-- **Тестирование верификации**: REST API endpoints для тестирования Kafka интеграции
-- **Mock тесты**: Имитация Kafka и Telegram API для изолированного тестирования
-- **Тестирование callback'ов**: Валидация обработки нажатий кнопок верификации
-- **Тестирование DTO**: Валидация структуры Kafka сообщений
 
 ## CI/CD Pipeline
 - Автоматическая сборка при изменении кода
-- Запуск тестов
 - Сборка Docker образа
 - Деплой на Ubuntu 20.04 сервер
 - **Проверка Kafka**: Валидация подключения к Kafka серверам
@@ -671,7 +649,7 @@ docker-compose up -d  # PostgreSQL + Kafka
 ### Верификация кодов через Kafka
 ```
 1. Запрос верификации:
-   POST /api/verification/test
+   POST /api/verification/verify
    {
      "code": "1234567",
      "ip": "192.168.1.1",

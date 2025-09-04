@@ -20,8 +20,8 @@ class CodeController(
      * Endpoint для проверки кода
      */
     @PostMapping("/verify")
-    fun testVerification(
-        @RequestBody request: TestVerificationRequest,
+    fun verifyCode(
+        @RequestBody request: VerificationRequest,
     ): ResponseEntity<Boolean> {
         return ResponseEntity.ok().body(userCodeService.verifyCode(request.code))
     }
@@ -52,7 +52,7 @@ class CodeController(
         }
     }
 
-    data class TestVerificationRequest(
+    data class VerificationRequest(
         /** Код для проверки */
         val code: String,
         /*** IP адрес запрашиваемого */

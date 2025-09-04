@@ -40,14 +40,12 @@ ssh-copy-id root@5.44.40.79
 
 ### Этапы CI/CD:
 
-1. **Test** - запуск тестов на каждом pull request
-2. **Build** - сборка Docker образа при мерже в main
+1. **Build** - сборка Docker образа при мерже в main
 3. **Deploy** - автоматический деплой на VPS
 
 ### Триггеры:
 
-- **Push в main** - полный pipeline (test → build → deploy)
-- **Pull Request** - только тесты
+- **Push в main** - полный pipeline (build → deploy)
 
 ## Мониторинг деплоя
 
@@ -80,13 +78,13 @@ curl http://5.44.40.79:8080/actuator/health
 
 ### Проблемы с SSH:
 ```bash
-# Тест SSH подключения
+# Проверка SSH подключения
 ssh -o ConnectTimeout=10 root@5.44.40.79 "echo 'Connection successful'"
 ```
 
 ### Проблемы с Docker registry:
 ```bash
-# Тест авторизации в GitFlic
+# Проверка авторизации в GitFlic
 echo $GITFLIC_PASS | docker login -u $GITFLIC_USER --password-stdin registry.gitflic.ru
 ```
 

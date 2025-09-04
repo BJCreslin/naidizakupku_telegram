@@ -129,7 +129,7 @@ DELETE /api/users/{id}
 # Отправить уведомление
 POST /api/users/{id}/notify
 {
-  "message": "Тестовое уведомление",
+  "message": "Уведомление",
   "type": "info"
 }
 ```
@@ -199,19 +199,6 @@ KAFKA_PASSWORD=
 - **docker-compose.yml** - локальная разработка
 - **docker-compose.prod.yml** - продакшен с автозапуском
 
-## Тестирование
-
-### Тестовый скрипт
-```bash
-# Запуск тестового скрипта
-kotlinc test-kafka.kt -include-runtime -d test-kafka.jar
-java -jar test-kafka.jar
-```
-
-### Тесты приложения
-```bash
-./gradlew test
-```
 
 ## Troubleshooting
 

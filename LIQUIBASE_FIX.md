@@ -89,7 +89,7 @@ logging:
 grep -i "liquibase\|database\|table" logs/application.log
 ```
 
-### 6. Тестирование
+### 6. Проверка
 
 #### Запуск приложения
 ```bash

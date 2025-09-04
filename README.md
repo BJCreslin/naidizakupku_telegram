@@ -150,7 +150,7 @@ DELETE /api/users/{id}
 # Отправить уведомление
 POST /api/users/{id}/notify
 {
-  "message": "Тестовое уведомление",
+  "message": "Уведомление",
   "type": "info"
 }
 ```
@@ -212,8 +212,7 @@ docker-compose logs -f zookeeper
 
 ### Workflow
 
-1. **Test** - запуск тестов на каждом PR
-2. **Build** - сборка Docker образа при мерже в main
+1. **Build** - сборка Docker образа при мерже в main
 3. **Deploy** - автоматический деплой на VPS
 
 ### Secrets
@@ -252,11 +251,6 @@ docker logs telegram-app -f
 
 ## Разработка
 
-### Запуск тестов
-
-```bash
-./gradlew test
-```
 
 ### Сборка
 

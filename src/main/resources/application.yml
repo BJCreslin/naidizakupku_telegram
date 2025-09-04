@@ -60,6 +60,7 @@ verification:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
     enabled: true
+    contexts: default
 
 server:
   port: ${SERVER_PORT:8080}

@@ -90,14 +90,14 @@ class UserController(
     }
     
     /**
-     * Отправка тестового уведомления
+     * Отправка уведомления
      */
     @PostMapping("/{id}/notify")
-    suspend fun sendTestNotification(
+    suspend fun sendNotification(
         @PathVariable id: Long,
         @RequestBody notification: Map<String, String>
     ): ResponseEntity<Map<String, String>> {
-        val message = notification["message"] ?: "Тестовое уведомление"
+        val message = notification["message"] ?: "Уведомление"
         val type = notification["type"] ?: "info"
         
         kafkaService.sendNotification(id, message, type)
