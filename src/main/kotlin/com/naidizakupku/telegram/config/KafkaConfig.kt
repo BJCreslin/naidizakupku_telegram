@@ -81,7 +81,7 @@ class KafkaConfig {
         val factory = ConcurrentKafkaListenerContainerFactory<String, CodeVerificationRequestDto>()
         factory.consumerFactory = consumerFactory()
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
-        factory.setMessageConverter(StringJsonMessageConverter())
+//        factory.setMessageConverter(StringJsonMessageConverter())
         return factory
     }
     
@@ -90,7 +90,7 @@ class KafkaConfig {
         val factory = ConcurrentKafkaListenerContainerFactory<String, AuthorizationRevokeResponseDto>()
         factory.consumerFactory = revokeResponseConsumerFactory()
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
-        factory.setMessageConverter(StringJsonMessageConverter())
+//        factory.setMessageConverter(StringJsonMessageConverter())
         return factory
     }
 }

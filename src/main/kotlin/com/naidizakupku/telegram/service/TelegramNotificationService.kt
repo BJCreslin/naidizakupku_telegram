@@ -39,7 +39,7 @@ class TelegramNotificationService(
             
             val result = telegramBot.execute(message)
             logger.info("Сообщение верификации отправлено: messageId=${result.messageId}")
-            return result.messageId
+            return result.messageId.toLong()
             
         } catch (e: TelegramApiException) {
             logger.error("Ошибка отправки сообщения верификации: ${e.message}", e)
@@ -51,7 +51,6 @@ class TelegramNotificationService(
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
-            message.messageId = messageId.toInt()
             message.text = "✅ Авторизация подтверждена"
             
             telegramBot.execute(message)
@@ -68,7 +67,6 @@ class TelegramNotificationService(
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
-            message.messageId = messageId.toInt()
             message.text = "⏳ Отзываем авторизацию..."
             
             telegramBot.execute(message)

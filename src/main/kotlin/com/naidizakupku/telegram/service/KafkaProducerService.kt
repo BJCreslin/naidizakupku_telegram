@@ -27,7 +27,7 @@ class KafkaProducerService(
         logger.info("Отправка ответа верификации: correlationId=${response.correlationId}, success=${response.success}")
         
         return kafkaTemplate.send(verificationResponseTopic, response.correlationId.toString(), response)
-            .completable()
+//            .completable()
             .whenComplete { result, throwable ->
                 if (throwable != null) {
                     logger.error("Ошибка отправки ответа верификации: ${throwable.message}", throwable)
@@ -41,7 +41,7 @@ class KafkaProducerService(
         logger.info("Отправка запроса отзыва авторизации: correlationId=${request.correlationId}")
         
         return kafkaTemplate.send(revokeRequestTopic, request.correlationId.toString(), request)
-            .completable()
+//            .completable()
             .whenComplete { result, throwable ->
                 if (throwable != null) {
                     logger.error("Ошибка отправки запроса отзыва: ${throwable.message}", throwable)

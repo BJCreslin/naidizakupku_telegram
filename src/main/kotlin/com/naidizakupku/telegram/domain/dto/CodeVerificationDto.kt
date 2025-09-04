@@ -8,7 +8,6 @@ data class CodeVerificationRequestDto(
     val correlationId: UUID,
     val code: String,
     val userBrowserInfo: UserBrowserInfoDto,
-    @JsonFormat(iso = JsonFormat.Shape.STRING)
     val timestamp: Instant
 )
 
@@ -17,7 +16,6 @@ data class CodeVerificationResponseDto(
     val success: Boolean,
     val telegramUserId: Long?,
     val message: String,
-    @JsonFormat(iso = JsonFormat.Shape.STRING)
     val timestamp: Instant
 )
 
@@ -26,7 +24,6 @@ data class AuthorizationRevokeRequestDto(
     val telegramUserId: Long,
     val originalVerificationCorrelationId: UUID,
     val reason: String,
-    @JsonFormat(iso = JsonFormat.Shape.STRING)
     val timestamp: Instant
 )
 
@@ -36,7 +33,6 @@ data class AuthorizationRevokeResponseDto(
     val telegramUserId: Long,
     val success: Boolean,
     val message: String,
-    @JsonFormat(iso = JsonFormat.Shape.STRING)
     val timestamp: Instant
 )
 
