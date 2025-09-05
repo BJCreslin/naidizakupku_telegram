@@ -1,7 +1,7 @@
 package com.naidizakupku.telegram.config
 
-import com.naidizakupku.telegram.domain.dto.AuthorizationRevokeResponseDto
-import com.naidizakupku.telegram.domain.dto.CodeVerificationRequestDto
+import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonSerializer
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -9,13 +9,13 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.kafka.annotation.EnableKafka
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.*
-import org.springframework.kafka.listener.ContainerProperties
-import org.springframework.kafka.support.serializer.JsonDeserializer
-import org.springframework.kafka.support.serializer.JsonSerializer
+
 
 @Configuration
+@EnableKafka
 class KafkaConfig {
     
     @Value("\${kafka.bootstrap-servers:localhost:9092}")
@@ -23,74 +23,70 @@ class KafkaConfig {
     
     @Value("\${kafka.consumer.group-id:telegram-bot-verification}")
     private lateinit var groupId: String
-    
+
+    // Producer factories
     @Bean
-    fun producerFactory(): ProducerFactory<String, String> {
-        val configProps = mapOf(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java,
-            ProducerConfig.ACKS_CONFIG to "all",
-            ProducerConfig.RETRIES_CONFIG to 3,
-            ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true
-        )
-        return DefaultKafkaProducerFactory(configProps)
+    fun stringProducerFactory(): ProducerFactory<String?, String?> {
+        val configProps: MutableMap<String?, Any?> = HashMap<String?, Any?>()
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java)
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java)
+        return DefaultKafkaProducerFactory<String?, String?>(configProps)
     }
-    
+
     @Bean
-    fun kafkaTemplate(): KafkaTemplate<String, String> {
-        return KafkaTemplate(producerFactory())
+    fun objectProducerFactory(): ProducerFactory<String?, Any?> {
+        val configProps: MutableMap<String?, Any?> = HashMap<String?, Any?>()
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java)
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer::class.java)
+        return DefaultKafkaProducerFactory<String?, Any?>(configProps)
     }
-    
+
+    // Kafka templates
     @Bean
-    fun consumerFactory(): ConsumerFactory<String, CodeVerificationRequestDto> {
-        val configProps = mapOf(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ConsumerConfig.GROUP_ID_CONFIG to groupId,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest",
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
-            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false
-        )
-        return DefaultKafkaConsumerFactory(
-            configProps,
-            StringDeserializer(),
-            JsonDeserializer(CodeVerificationRequestDto::class.java)
-        )
+    fun kafkaTemplate(): KafkaTemplate<String?, String?> {
+        return KafkaTemplate<String?, String?>(stringProducerFactory())
     }
-    
+
     @Bean
-    fun revokeResponseConsumerFactory(): ConsumerFactory<String, AuthorizationRevokeResponseDto> {
-        val configProps = mapOf(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ConsumerConfig.GROUP_ID_CONFIG to "${groupId}-revoke",
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest",
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
-            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false
-        )
-        return DefaultKafkaConsumerFactory(
-            configProps,
-            StringDeserializer(),
-            JsonDeserializer(AuthorizationRevokeResponseDto::class.java)
-        )
+    fun kafkaObjectTemplate(): KafkaTemplate<String?, Any?> {
+        return KafkaTemplate<String?, Any?>(objectProducerFactory())
     }
-    
+
+    // Consumer factories
     @Bean
-    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, CodeVerificationRequestDto> {
-        val factory = ConcurrentKafkaListenerContainerFactory<String, CodeVerificationRequestDto>()
-        factory.consumerFactory = consumerFactory()
-        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
-//        factory.setMessageConverter(StringJsonMessageConverter())
+    fun stringConsumerFactory(): org.springframework.kafka.core.ConsumerFactory<String?, String?> {
+        val props: MutableMap<String?, Any?> = HashMap<String?, Any?>()
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "telegram-group")
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
+        return DefaultKafkaConsumerFactory<String?, String?>(props)
+    }
+
+    @Bean
+    fun objectConsumerFactory(): ConsumerFactory<String?, Any?> {
+        val props: MutableMap<String?, Any?> = HashMap<String?, Any?>()
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "telegram-group")
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer::class.java)
+        return DefaultKafkaConsumerFactory<String?, Any?>(props)
+    }
+
+    // Listener container factories
+    @Bean
+    fun stringKafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String?, String?> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String?, String?>()
+        factory.setConsumerFactory(stringConsumerFactory())
         return factory
     }
-    
+
     @Bean
-    fun revokeResponseListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, AuthorizationRevokeResponseDto> {
-        val factory = ConcurrentKafkaListenerContainerFactory<String, AuthorizationRevokeResponseDto>()
-        factory.consumerFactory = revokeResponseConsumerFactory()
-        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
-//        factory.setMessageConverter(StringJsonMessageConverter())
+    fun kafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String?, Any?> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String?, Any?>()
+        factory.setConsumerFactory(objectConsumerFactory())
         return factory
     }
 }
