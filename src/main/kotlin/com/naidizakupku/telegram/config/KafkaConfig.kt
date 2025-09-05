@@ -1,6 +1,7 @@
 package com.naidizakupku.telegram.config
 
-import com.naidizakupku.telegram.domain.dto.*
+import com.naidizakupku.telegram.domain.dto.AuthorizationRevokeResponseDto
+import com.naidizakupku.telegram.domain.dto.CodeVerificationRequestDto
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -13,7 +14,6 @@ import org.springframework.kafka.core.*
 import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.support.serializer.JsonDeserializer
 import org.springframework.kafka.support.serializer.JsonSerializer
-import org.springframework.kafka.support.converter.StringJsonMessageConverter
 
 @Configuration
 class KafkaConfig {
@@ -25,7 +25,7 @@ class KafkaConfig {
     private lateinit var groupId: String
     
     @Bean
-    fun producerFactory(): ProducerFactory<String, Any> {
+    fun producerFactory(): ProducerFactory<String, String> {
         val configProps = mapOf(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
@@ -38,7 +38,7 @@ class KafkaConfig {
     }
     
     @Bean
-    fun kafkaTemplate(): KafkaTemplate<String, Any> {
+    fun kafkaTemplate(): KafkaTemplate<String, String> {
         return KafkaTemplate(producerFactory())
     }
     
