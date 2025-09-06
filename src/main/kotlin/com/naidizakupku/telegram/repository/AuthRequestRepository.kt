@@ -28,4 +28,9 @@ interface AuthRequestRepository : JpaRepository<AuthRequest, Long> {
      * Проверяет существование запроса по trace ID
      */
     fun existsByTraceId(traceId: UUID): Boolean
+
+    /**
+     * Удаляет запрос по trace ID
+     */
+    fun deleteByTraceId(traceId: UUID)
 }

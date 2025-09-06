@@ -85,9 +85,9 @@ src/main/resources/
 
 ### 2. Service Layer (`service/`)
 **Назначение**: Бизнес-логика приложения
-- `TelegramBotService.kt` - основной сервис Telegram бота с эхо-функцией и обработкой команды /code
+- `TelegramBotService.kt` - основной сервис Telegram бота с эхо-функцией, обработкой команды /code и callback'ов авторизации
 - `UserService.kt` - управление пользователями
-- `UserCodeService.kt` - управление временными кодами пользователей
+- `UserCodeService.kt` - управление временными кодами пользователей и обработка авторизации с Telegram уведомлениями
 - `CodeGenerationService.kt` - генерация уникальных 7-значных кодов
 - `KafkaService.kt` - отправка сообщений в Kafka топики
 - `KafkaConsumerService.kt` - потребление сообщений из Kafka топиков
@@ -95,7 +95,7 @@ src/main/resources/
 - `DatabaseHealthService.kt` - проверка здоровья базы данных и проверка таблиц
 - `KafkaVerificationService.kt` - основная логика верификации кодов через Kafka
 - `VerificationSessionService.kt` - управление сессиями верификации
-- `TelegramNotificationService.kt` - отправка уведомлений в Telegram для верификации
+- `TelegramNotificationService.kt` - отправка уведомлений в Telegram для верификации и авторизации с inline кнопками
 - `KafkaProducerService.kt` - отправка сообщений в Kafka топики верификации
 
 ### 3. Repository Layer (`repository/`)
@@ -103,7 +103,7 @@ src/main/resources/
 - `UserRepository.kt` - CRUD операции для пользователей
 - `UserCodeRepository.kt` - CRUD операции для временных кодов пользователей
 - `VerificationSessionRepository.kt` - CRUD операции для сессий верификации
-- `AuthRequestRepository.kt` - CRUD операции для запросов аутентификации
+- `AuthRequestRepository.kt` - CRUD операции для запросов аутентификации с методами поиска и удаления по traceId
 
 ### 4. Domain Layer (`domain/`)
 **Назначение**: Модели данных и бизнес-сущности
@@ -196,6 +196,7 @@ src/main/resources/
   - **Response**: `Boolean` (true если код валиден)
   - **Функциональность**: Проверяет код и сохраняет запрос аутентификации в БД через `UserCodeService.verifyCodeForAuth()`
   - **Сохранение**: Создает запись в таблице `auth_requests` с trace_id и telegram_user_id для отслеживания запросов
+  - **Telegram уведомление**: Отправляет пользователю сообщение с кнопками подтверждения/отклонения входа
 
 - `GET /api/code/status/{correlationId}` - получение статуса сессии верификации
   - **Path Parameter**: `correlationId` (UUID)
@@ -247,6 +248,13 @@ Kafka → VerificationRequestListener → KafkaVerificationService → Verificat
 
 REST API верификация:
 HTTP Client → CodeController → UserCodeService → UserCodeRepository → PostgreSQL
+
+Авторизация с Telegram подтверждением:
+HTTP Client → CodeController → UserCodeService → TelegramNotificationService → Telegram Bot API
+                                                      ↓
+Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthRequestRepository → PostgreSQL
+                                                      ↓
+                                              KafkaProducerService → Kafka (при отзыве)
 ```
 
 ### Kafka потоки
@@ -256,6 +264,26 @@ HTTP Client → CodeController → UserCodeService → UserCodeRepository → Po
 - **Потребление уведомлений**: `notifications` топик → `KafkaConsumerService.handleNotification()`
 
 ### Kafka потоки верификации
+
+## Новые методы для авторизации с Telegram подтверждением
+
+### UserCodeService
+- `verifyCodeForAuth(request: VerificationRequest, traceId: UUID)` - проверяет код для авторизации, сохраняет запрос в БД и отправляет уведомление в Telegram
+- `confirmAuth(traceId: UUID)` - подтверждает вход пользователя, удаляет запрос из БД и убирает кнопки из Telegram
+- `revokeAuth(traceId: UUID)` - отклоняет вход пользователя, отправляет сообщение в Kafka и уведомляет пользователя
+
+### TelegramNotificationService
+- `sendAuthConfirmationRequest(telegramUserId, traceId, ip, userAgent, location)` - отправляет уведомление о запросе авторизации с inline кнопками
+- `removeAuthConfirmationButtons(telegramUserId, traceId)` - удаляет кнопки из сообщения подтверждения
+- `sendAuthRevokedMessage(telegramUserId)` - отправляет сообщение об отзыве авторизации
+
+### TelegramBotService
+- `handleCallbackQuery(update: Update)` - обрабатывает callback'и от inline кнопок авторизации
+- `answerCallbackQuery(callbackQueryId, text)` - отправляет ответ на callback query
+
+### AuthRequestRepository
+- `findByTraceId(traceId: UUID)` - находит запрос по trace ID
+- `deleteByTraceId(traceId: UUID)` - удаляет запрос по trace ID
 - **Запросы верификации**: `code-verification-request` топик → `VerificationRequestListener` → `KafkaVerificationService`
 - **Ответы верификации**: `KafkaProducerService` → `code-verification-response` топик
 - **Запросы отзыва**: `KafkaProducerService` → `authorization-revoke-request` топик

@@ -19,7 +19,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 class TelegramBotService(
     private val telegramConfig: TelegramConfig,
     private val userService: UserServiceInterface,
-    private val telegramCodeHandler: TelegramCodeHandler
+    private val telegramCodeHandler: TelegramCodeHandler,
+    private val userCodeService: UserCodeService
 ) : TelegramLongPollingBot(telegramConfig.botToken) {
 
     private val logger = LoggerFactory.getLogger(TelegramBotService::class.java)
@@ -34,6 +35,12 @@ class TelegramBotService(
 
     override fun onUpdateReceived(update: Update) {
         try {
+            // Обработка callback'ов от inline кнопок
+            if (update.hasCallbackQuery()) {
+                handleCallbackQuery(update)
+                return
+            }
+
             if (update.hasMessage() && update.message.hasText() && update.message.text != null && update.message.text.isNotBlank()) {
                 val message = update.message
                 val chatId = message.chatId
@@ -69,6 +76,69 @@ class TelegramBotService(
             }
         } catch (e: Exception) {
             logger.error("Ошибка при обработке сообщения", e)
+        }
+    }
+
+    /**
+     * Обрабатывает callback'и от inline кнопок
+     */
+    private fun handleCallbackQuery(update: Update) {
+        try {
+            val callbackQuery = update.callbackQuery
+            val callbackData = callbackQuery.data
+            val userId = callbackQuery.from.id
+
+            logger.info("Получен callback от пользователя $userId: $callbackData")
+
+            when {
+                callbackData.startsWith("auth_confirm_") -> {
+                    val traceId = callbackData.removePrefix("auth_confirm_")
+                    val success = userCodeService.confirmAuth(java.util.UUID.fromString(traceId))
+                    
+                    if (success) {
+                        answerCallbackQuery(callbackQuery.id, "✅ Вход подтвержден")
+                    } else {
+                        answerCallbackQuery(callbackQuery.id, "❌ Ошибка подтверждения входа")
+                    }
+                }
+                callbackData.startsWith("auth_revoke_") -> {
+                    val traceId = callbackData.removePrefix("auth_revoke_")
+                    val success = userCodeService.revokeAuth(java.util.UUID.fromString(traceId))
+                    
+                    if (success) {
+                        answerCallbackQuery(callbackQuery.id, "❌ Вход отозван")
+                    } else {
+                        answerCallbackQuery(callbackQuery.id, "❌ Ошибка отзыва входа")
+                    }
+                }
+                else -> {
+                    logger.warn("Неизвестный callback: $callbackData")
+                    answerCallbackQuery(callbackQuery.id, "❌ Неизвестная команда")
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Ошибка при обработке callback", e)
+            try {
+                answerCallbackQuery(update.callbackQuery.id, "❌ Произошла ошибка")
+            } catch (ex: Exception) {
+                logger.error("Ошибка при отправке ответа на callback", ex)
+            }
+        }
+    }
+
+    /**
+     * Отправляет ответ на callback query
+     */
+    private fun answerCallbackQuery(callbackQueryId: String, text: String) {
+        try {
+            val answerCallbackQuery = org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery()
+            answerCallbackQuery.callbackQueryId = callbackQueryId
+            answerCallbackQuery.text = text
+            answerCallbackQuery.showAlert = false
+            
+            execute(answerCallbackQuery)
+        } catch (e: TelegramApiException) {
+            logger.error("Ошибка при отправке ответа на callback query", e)
         }
     }
 
