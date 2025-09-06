@@ -1,5 +1,7 @@
 package com.naidizakupku.telegram.service
 
+import com.naidizakupku.telegram.domain.AuthRequest
+import com.naidizakupku.telegram.repository.AuthRequestRepository
 import com.naidizakupku.telegram.repository.UserCodeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -12,6 +14,7 @@ import java.util.*
 @Service
 class UserCodeService(
     private val userCodeRepository: UserCodeRepository,
+    private val authRequestRepository: AuthRequestRepository,
     private val codeGenerationService: CodeGenerationService
 ) {
 
@@ -38,14 +41,23 @@ class UserCodeService(
      */
     @Transactional
     fun verifyCodeForAuth(code: String, traceId: UUID): Boolean? {
-        val existingCode = userCodeRepository.existsByCodeAndNotExpired(code)
-        if (!existingCode) {
+        val existingCode = userCodeRepository.findByCodeAndNotExpired(code)
+        if (existingCode == null) {
             logger.info("Код $code не найден или просрочен. $traceId")
             return false
         }
-        //todo: тут написать сохранение в БД в таблицу запросов выданных кодов
+        
+        // Сохраняем запрос аутентификации в БД
+        val authRequest = AuthRequest(
+            traceId = traceId,
+            telegramUserId = existingCode.telegramUserId,
+            requestedAt = LocalDateTime.now()
+        )
+        authRequestRepository.save(authRequest)
+        
+        // Удаляем использованный код
         userCodeRepository.deleteByCode(code)
-        logger.info("Код $code найден и удален. $traceId")
+        logger.info("Код $code найден, запрос сохранен и код удален. $traceId")
         return true
     }
 

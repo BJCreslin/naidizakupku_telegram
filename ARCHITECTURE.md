@@ -103,6 +103,7 @@ src/main/resources/
 - `UserRepository.kt` - CRUD операции для пользователей
 - `UserCodeRepository.kt` - CRUD операции для временных кодов пользователей
 - `VerificationSessionRepository.kt` - CRUD операции для сессий верификации
+- `AuthRequestRepository.kt` - CRUD операции для запросов аутентификации
 
 ### 4. Domain Layer (`domain/`)
 **Назначение**: Модели данных и бизнес-сущности
@@ -110,6 +111,7 @@ src/main/resources/
 - `UserCode.kt` - сущность временного кода пользователя
 - `VerificationSession.kt` - сущность сессии верификации кода
 - `VerificationStatus.kt` - enum статусов верификации (PENDING, CONFIRMED, REVOKED)
+- `AuthRequest.kt` - сущность запроса аутентификации
 
 ### 5. Config Layer (`config/`)
 **Назначение**: Конфигурация приложения
@@ -179,6 +181,21 @@ src/main/resources/
     ```
   - **Response**: `Boolean` (true если код валиден)
   - **Функциональность**: Проверяет существование и валидность кода через `UserCodeService.verifyCode()`
+
+- `POST /api/code/auth` - проверка кода для аутентификации
+  - **Request Body**: `VerificationRequest`
+    ```json
+    {
+      "code": "1234567",
+      "ip": "192.168.1.1",
+      "userAgent": "Chrome/120.0.0.0",
+      "location": "Moscow, Russia"
+    }
+    ```
+  - **Headers**: `X-Trace-Id` (UUID) - уникальный идентификатор запроса
+  - **Response**: `Boolean` (true если код валиден)
+  - **Функциональность**: Проверяет код и сохраняет запрос аутентификации в БД через `UserCodeService.verifyCodeForAuth()`
+  - **Сохранение**: Создает запись в таблице `auth_requests` с trace_id и telegram_user_id для отслеживания запросов
 
 - `GET /api/code/status/{correlationId}` - получение статуса сессии верификации
   - **Path Parameter**: `correlationId` (UUID)
@@ -278,6 +295,12 @@ HTTP Client → CodeController → UserCodeService → UserCodeRepository → Po
 - `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время создания сессии
 - `updated_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время последнего обновления сессии
 
+### Таблица `auth_requests`
+- `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT) - уникальный идентификатор
+- `trace_id` (UUID, UNIQUE, NOT NULL) - уникальный идентификатор запроса (UUID из header X-Trace-Id)
+- `telegram_user_id` (BIGINT, NOT NULL) - ID пользователя Telegram
+- `requested_at` (TIMESTAMP, NOT NULL) - время создания запроса
+
 ### Индексы
 - `idx_users_telegram_id` - уникальный индекс по telegram_id
 - `idx_users_username` - индекс по username (для быстрого поиска)
@@ -293,10 +316,16 @@ HTTP Client → CodeController → UserCodeService → UserCodeRepository → Po
 - `idx_verification_telegram_user_id` - индекс по telegram_user_id для поиска сессий пользователя
 - `idx_verification_status_created` - составной индекс по status и created_at для очистки просроченных сессий
 
+#### Индексы для таблицы `auth_requests`
+- `idx_auth_requests_trace_id` - уникальный индекс по trace_id для быстрого поиска
+- `idx_auth_requests_telegram_user_id` - индекс по telegram_user_id для поиска запросов пользователя
+- `idx_auth_requests_requested_at` - индекс по requested_at для очистки старых запросов
+
 ### Миграции
 - **001-create-users-table.xml** - создание таблицы users
 - **002-create-user-codes-table.xml** - создание таблицы user_codes для временных кодов
 - **003-create-verification-sessions-table.xml** - создание таблицы verification_sessions для сессий верификации
+- **004-create-auth-requests-table.xml** - создание таблицы auth_requests для запросов аутентификации
 - **002-add-user-fields.xml** - добавление дополнительных полей
 - **002-remove-user-fields.xml** - удаление неиспользуемых полей
 
