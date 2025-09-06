@@ -2,6 +2,7 @@ package com.naidizakupku.telegram.config
 
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonSerializer
+import org.springframework.kafka.support.serializer.JsonDeserializer as SpringJsonDeserializer
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -76,10 +77,10 @@ class KafkaConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer::class.java)
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*")
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false)
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "java.lang.String")
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, SpringJsonDeserializer::class.java)
+        props.put("spring.json.trusted.packages", "*")
+        props.put("spring.json.use.type.headers", false)
+        props.put("spring.json.value.default.type", "java.lang.String")
         return DefaultKafkaConsumerFactory<String?, Any?>(props)
     }
 
@@ -106,12 +107,12 @@ class KafkaConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
         props.put(ConsumerConfig.GROUP_ID_CONFIG, verificationGroupId)
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java)
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer::class.java)
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, SpringJsonDeserializer::class.java)
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false)
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*")
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false)
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "java.lang.String")
+        props.put("spring.json.trusted.packages", "*")
+        props.put("spring.json.use.type.headers", false)
+        props.put("spring.json.value.default.type", "java.lang.String")
         return DefaultKafkaConsumerFactory<String?, Any?>(props)
     }
 
