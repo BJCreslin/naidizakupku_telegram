@@ -79,7 +79,9 @@ src/main/resources/
 
 ### 1. Controller Layer (`controller/`)
 **Назначение**: Обработка HTTP-запросов и Telegram webhook'ов
-- `TelegramController.kt` - обработка входящих сообщений от Telegram Bot API
+- `UserController.kt` - REST API для управления пользователями (CRUD операции, уведомления)
+- `CodeController.kt` - REST API для работы с кодами верификации
+- `interceptor/TracingInterceptor.kt` - перехватчик для автоматической обработки заголовков трассировки
 
 ### 2. Service Layer (`service/`)
 **Назначение**: Бизнес-логика приложения
@@ -111,8 +113,10 @@ src/main/resources/
 
 ### 5. Config Layer (`config/`)
 **Назначение**: Конфигурация приложения
+- `DatabaseConfig.kt` - конфигурация базы данных с условной загрузкой Liquibase
 - `KafkaConfig.kt` - настройки Kafka, создание топиков (user-events, notifications, верификация)
 - `TelegramConfig.kt` - настройки Telegram Bot (токен, имя, username)
+- `WebClientConfig.kt` - конфигурация WebClient для HTTP запросов
 
 ### 6. Handler Layer (`handler/`)
 **Назначение**: Обработчики команд Telegram бота
@@ -124,6 +128,87 @@ src/main/resources/
 - `CodeCleanupScheduler.kt` - автоматическая очистка просроченных кодов каждые 5 минут (300000 мс)
 - `VerificationSessionCleanupScheduler.kt` - автоматическая очистка просроченных сессий верификации каждые 5 минут
 
+## REST API Endpoints
+
+### UserController (`/api/users`)
+**Назначение**: Управление пользователями и отправка уведомлений
+
+#### Endpoints:
+- `POST /api/users` - создание нового пользователя
+  - **Request Body**: `User` объект
+  - **Response**: `User` объект
+  - **Kafka Event**: `user_registered`
+
+- `GET /api/users/{id}` - получение пользователя по ID
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `User` объект
+
+- `GET /api/users` - получение всех пользователей
+  - **Response**: `List<User>`
+
+- `PUT /api/users/{id}` - обновление пользователя
+  - **Path Parameter**: `id` (Long)
+  - **Request Body**: `User` объект
+  - **Response**: `User` объект
+  - **Kafka Event**: `user_updated`
+
+- `DELETE /api/users/{id}` - удаление пользователя
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `200 OK`
+  - **Kafka Event**: `user_deleted`
+
+- `POST /api/users/{id}/notify` - отправка уведомления пользователю
+  - **Path Parameter**: `id` (Long)
+  - **Request Body**: `{"message": "текст", "type": "info"}`
+  - **Response**: `{"status": "success", "message": "Уведомление отправлено в очередь"}`
+  - **Kafka Event**: отправка в топик `notifications`
+
+### CodeController (`/api/code`)
+**Назначение**: Работа с кодами верификации
+
+#### Endpoints:
+- `POST /api/code/verify` - проверка кода
+  - **Request Body**: `VerificationRequest`
+    ```json
+    {
+      "code": "1234567",
+      "ip": "192.168.1.1",
+      "userAgent": "Chrome/120.0.0.0",
+      "location": "Moscow, Russia"
+    }
+    ```
+  - **Response**: `Boolean` (true если код валиден)
+  - **Функциональность**: Проверяет существование и валидность кода через `UserCodeService.verifyCode()`
+
+- `GET /api/code/status/{correlationId}` - получение статуса сессии верификации
+  - **Path Parameter**: `correlationId` (UUID)
+  - **Response**: 
+    ```json
+    {
+      "correlationId": "uuid",
+      "status": "PENDING|CONFIRMED|REVOKED",
+      "message": "описание статуса"
+    }
+    ```
+  - **Статус**: TODO - требует реализации получения статуса из сервиса
+  - **Валидация**: Проверка корректности UUID формата
+
+### TracingInterceptor
+**Назначение**: Автоматическая обработка заголовков трассировки
+
+#### Поддерживаемые заголовки:
+- `X-Trace-Id` - уникальный идентификатор всего запроса
+- `X-Span-Id` - идентификатор текущего участка обработки
+- `X-Request-Id` - общий идентификатор запроса пользователя
+- `X-Correlation-Id` - для корреляции связанных запросов
+- `X-Parent-Span-Id` - идентификатор родительского span'а
+
+#### Функциональность:
+- Автоматическая генерация trace/span ID если не переданы
+- Добавление заголовков в MDC для логирования
+- Возврат заголовков в response для клиента
+- Сохранение контекста в request attributes
+
 ## Поток данных
 
 ### Основной поток
@@ -132,11 +217,19 @@ Telegram Bot API → TelegramBotService → UserService → UserRepository → P
                                     ↓
                               KafkaService → Kafka → KafkaConsumerService
 
+REST API поток:
+HTTP Client → UserController/CodeController → Service Layer → Repository Layer → PostgreSQL
+                                    ↓
+                              KafkaService → Kafka → KafkaConsumerService
+
 Команда /code:
 Telegram Bot API → TelegramBotService → TelegramCodeHandler → UserCodeService → CodeGenerationService → UserCodeRepository → PostgreSQL
 
 Верификация кодов:
 Kafka → VerificationRequestListener → KafkaVerificationService → VerificationSessionService → TelegramNotificationService → Telegram Bot API
+
+REST API верификация:
+HTTP Client → CodeController → UserCodeService → UserCodeRepository → PostgreSQL
 ```
 
 ### Kafka потоки
@@ -340,9 +433,10 @@ Kafka → VerificationRequestListener → KafkaVerificationService → Verificat
 
 ### Конфигурация базы данных
 - **PostgreSQL**: Основная БД для продакшна и разработки
-- **Liquibase**: Управление миграциями БД
+- **Liquibase**: Управление миграциями БД с условной загрузкой
 - **JPA/Hibernate**: ORM с автоматическим определением диалекта
 - **Подключение**: Через переменные окружения с fallback значениями
+- **DatabaseConfig**: Условная загрузка Liquibase только при наличии `spring.datasource.url`
 
 ### Конфигурация Kafka
 - **KRaft режим**: Без Zookeeper
@@ -362,6 +456,11 @@ Kafka → VerificationRequestListener → KafkaVerificationService → Verificat
 - **Очистка сессий**: Автоматическое удаление просроченных сессий каждые 5 минут
 - **Telegram уведомления**: HTML форматирование с эмодзи и кнопками
 - **Часовой пояс**: Московское время (UTC+3) для отображения времени
+
+### Конфигурация WebClient
+- **WebClientConfig**: Конфигурация для HTTP запросов
+- **Максимальный размер буфера**: 1MB для обработки больших ответов
+- **Использование**: Для внешних HTTP вызовов в сервисах
 
 ### Переменные окружения
 
@@ -475,6 +574,13 @@ docker-compose up -d  # PostgreSQL + Kafka
 - Ошибки Kafka: ERROR уровень с деталями и correlationId
 - Обработка callback'ов: INFO уровень с результатами нажатий кнопок
 
+### Логирование REST API
+- **TracingInterceptor**: Автоматическое добавление trace/span ID в MDC
+- **HTTP запросы**: Логирование с traceId, spanId, requestId
+- **API endpoints**: INFO уровень с деталями запросов и ответов
+- **Ошибки API**: ERROR уровень с полным контекстом трассировки
+- **Корреляция**: Связывание связанных запросов через correlationId
+
 ### Технические детали реализации
 - **Генерация кодов**: ThreadLocalRandom для криптографически безопасной генерации
 - **Проверка уникальности**: Оптимизированные SQL запросы с индексами
@@ -492,6 +598,19 @@ docker-compose up -d  # PostgreSQL + Kafka
 - **Graceful shutdown**: Корректное завершение обработки сообщений при остановке
 - **Telegram API**: Асинхронная отправка уведомлений с inline клавиатурами
 - **Callback обработка**: Асинхронная обработка нажатий кнопок с валидацией
+
+### Технические детали REST API
+- **Spring WebMVC**: REST контроллеры с аннотациями @RestController
+- **Suspend функции**: Асинхронная обработка запросов с корутинами (UserController)
+- **Синхронные функции**: Обычные функции для CodeController (verifyCode, getVerificationStatus)
+- **TracingInterceptor**: Автоматическая обработка заголовков трассировки
+- **WebClient**: Реактивный HTTP клиент для внешних вызовов
+- **ResponseEntity**: Стандартизированные HTTP ответы
+- **Path Variables**: Валидация параметров пути
+- **Request Body**: JSON десериализация в DTO объекты
+- **Error Handling**: Централизованная обработка ошибок API
+- **Data Classes**: VerificationRequest как data class с опциональными полями
+- **UUID Parsing**: Try-catch блоки для валидации UUID формата
 
 ### Информация при старте
 При запуске приложения автоматически выводится:
@@ -530,6 +649,15 @@ docker-compose up -d  # PostgreSQL + Kafka
 - Аудит всех операций верификации и отзыва авторизации
 - Защита от CSRF атак через валидацию callback'ов
 
+### Безопасность REST API
+- **TracingInterceptor**: Автоматическая генерация и валидация заголовков трассировки
+- **Path Variables**: Валидация UUID и числовых параметров
+- **Request Body**: Валидация JSON структуры и обязательных полей
+- **CORS**: Настройка Cross-Origin Resource Sharing для веб-клиентов
+- **Rate Limiting**: Ограничение частоты запросов к API endpoints
+- **Input Sanitization**: Очистка пользовательского ввода от потенциально опасных данных
+- **Error Handling**: Безопасное возвращение ошибок без утечки внутренней информации
+
 ### Безопасность кодов
 - **Уникальность**: Гарантированная уникальность каждого кода в системе
 - **Временное ограничение**: Автоматическое истечение кодов
@@ -562,6 +690,16 @@ docker-compose up -d  # PostgreSQL + Kafka
 - Валидация callback'ов: Проверка формата и принадлежности сессий
 - Валидация временных меток: Проверка корректности timestamp данных
 
+### Валидация REST API
+- **Path Variables**: Валидация UUID формата для correlationId, числовых ID
+- **Request Body**: Валидация JSON структуры, обязательных полей
+- **VerificationRequest**: Проверка формата кода (7 цифр), IP адреса, User-Agent (опциональные поля)
+- **User объекты**: Валидация telegramId, имен, username
+- **Notification объекты**: Проверка message и type полей (с fallback значениями)
+- **HTTP Headers**: Валидация заголовков трассировки (X-Trace-Id, X-Span-Id)
+- **Response Format**: Стандартизированные JSON ответы с корректными HTTP статусами
+- **UUID валидация**: Проверка корректности correlationId с возвратом 400 Bad Request при ошибке
+
 ### Обработка исключений
 - Ошибки БД: Логирование с деталями, возврат пользователю понятного сообщения
 - Ошибки генерации: Fallback на повторные попытки с ограничением
@@ -575,6 +713,17 @@ docker-compose up -d  # PostgreSQL + Kafka
 - Ошибки callback'ов: Валидация и безопасная обработка нажатий кнопок
 - Ошибки сериализации: Fallback на базовые форматы сообщений
 - Ошибки БД: Graceful degradation с сохранением состояния сессий
+
+### Обработка ошибок REST API
+- **HTTP Status Codes**: Корректные коды ответов (200, 400, 404, 500)
+- **Validation Errors**: 400 Bad Request с деталями ошибок валидации
+- **UUID Format Errors**: 400 Bad Request для некорректных correlationId
+- **Not Found**: 404 для несуществующих ресурсов
+- **Server Errors**: 500 с логированием и без утечки внутренней информации
+- **Tracing**: Все ошибки логируются с traceId для корреляции
+- **Graceful Degradation**: Fallback ответы при недоступности зависимостей
+- **Error Response Format**: Стандартизированные JSON ответы с описанием ошибок
+- **Fallback Values**: Дефолтные значения для опциональных полей (message, type, ip, userAgent)
 
 ### Обработка часовых поясов
 - По умолчанию: UTC+3 (Московское время)
@@ -627,6 +776,23 @@ docker-compose up -d  # PostgreSQL + Kafka
 - **Шардинг БД**: Возможность распределения сессий по разным базам данных
 - **Масштабирование callback'ов**: Распределение обработки нажатий кнопок
 
+### Оптимизация REST API
+- **Suspend функции**: Неблокирующая обработка HTTP запросов
+- **WebClient**: Реактивные HTTP вызовы для внешних сервисов
+- **TracingInterceptor**: Минимальные накладные расходы на трассировку
+- **ResponseEntity**: Эффективная сериализация JSON ответов
+- **Path Variables**: Быстрая валидация параметров пути
+- **Request Body**: Оптимизированная десериализация JSON
+- **Error Handling**: Быстрая обработка ошибок без лишних вычислений
+
+### Масштабируемость REST API
+- **Горизонтальное масштабирование**: Stateless REST endpoints
+- **Load Balancing**: Распределение HTTP запросов между экземплярами
+- **Connection Pooling**: Переиспользование HTTP соединений
+- **Async Processing**: Асинхронная обработка с корутинами
+- **Caching**: Возможность кэширования часто запрашиваемых данных
+- **Rate Limiting**: Контроль нагрузки на API endpoints
+
 ### Исправления деплоя
 - **Проблема с форматом переменных окружения**: Исправлены пробелы вокруг `=` в команде `docker run`
 - **Добавлены переменные Kafka**: `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_USER`, `KAFKA_PASSWORD`
@@ -634,6 +800,85 @@ docker-compose up -d  # PostgreSQL + Kafka
 - **Улучшенная обработка ошибок**: Более детальные сообщения об ошибках и логирование
 
 ## Примеры использования
+
+### REST API - Управление пользователями
+
+#### Создание пользователя
+```bash
+POST /api/users
+Content-Type: application/json
+
+{
+  "telegramId": 123456789,
+  "firstName": "Иван",
+  "lastName": "Петров",
+  "username": "ivan_petrov"
+}
+
+Response: 200 OK
+{
+  "id": 1,
+  "telegramId": 123456789,
+  "firstName": "Иван",
+  "lastName": "Петров",
+  "username": "ivan_petrov",
+  "createdAt": "2024-01-01T15:30:00",
+  "active": true
+}
+```
+
+#### Отправка уведомления
+```bash
+POST /api/users/1/notify
+Content-Type: application/json
+
+{
+  "message": "Добро пожаловать!",
+  "type": "info"
+}
+
+Response: 200 OK
+{
+  "status": "success",
+  "message": "Уведомление отправлено в очередь"
+}
+```
+
+### REST API - Верификация кодов
+
+#### Проверка кода
+```bash
+POST /api/code/verify
+Content-Type: application/json
+
+{
+  "code": "1234567",
+  "ip": "192.168.1.1",
+  "userAgent": "Chrome/120.0.0.0",
+  "location": "Moscow, Russia"
+}
+
+Response: 200 OK
+true
+```
+
+#### Получение статуса верификации
+```bash
+GET /api/code/status/550e8400-e29b-41d4-a716-446655440000
+
+Response: 200 OK
+{
+  "correlationId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "PENDING",
+  "message": "Status retrieval not implemented yet"
+}
+
+# При некорректном UUID:
+Response: 400 Bad Request
+{
+  "error": "Invalid correlation ID format"
+}
+```
 
 ### Команда /code
 ```

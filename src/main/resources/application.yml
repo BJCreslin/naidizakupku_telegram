@@ -19,7 +19,7 @@ spring:
     defer-datasource-initialization: false
   
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     security:
       username: ${KAFKA_USER:}
       password: ${KAFKA_PASSWORD:}
@@ -41,15 +41,15 @@ spring:
 
 # Kafka конфигурация для верификации
 kafka:
-  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-  consumer:
-    group-id: telegram-bot-verification
-    auto-offset-reset: latest
   topics:
     verification-request: code-verification-request
     verification-response: code-verification-response
     revoke-request: authorization-revoke-request
     revoke-response: authorization-revoke-response
+  verification:
+    consumer:
+      group-id: telegram-bot-verification
+      auto-offset-reset: latest
 
 # Настройки верификации
 verification:

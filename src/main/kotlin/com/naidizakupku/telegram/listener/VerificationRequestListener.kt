@@ -19,7 +19,7 @@ class VerificationRequestListener(
     
     @KafkaListener(
         topics = ["\${kafka.topics.verification-request:code-verification-request}"],
-        containerFactory = "kafkaListenerContainerFactory"
+        containerFactory = "verificationKafkaListenerContainerFactory"
     )
     fun handleVerificationRequest(
         @Payload request: CodeVerificationRequestDto,

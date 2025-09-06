@@ -19,7 +19,7 @@ class RevokeResponseListener(
     
     @KafkaListener(
         topics = ["\${kafka.topics.revoke-response:authorization-revoke-response}"],
-        containerFactory = "revokeResponseListenerContainerFactory"
+        containerFactory = "verificationKafkaListenerContainerFactory"
     )
     fun handleRevokeResponse(
         @Payload response: AuthorizationRevokeResponseDto,
