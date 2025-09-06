@@ -35,7 +35,7 @@ class CodeController(
         @RequestBody request: VerificationRequest,
         @Header("X-Trace-Id") traceId: UUID
     ): ResponseEntity<Boolean> {
-        return ResponseEntity.ok().body(userCodeService.verifyCodeForAuth(request.code, traceId))
+        return ResponseEntity.ok().body(userCodeService.verifyCodeForAuth(request, traceId))
     }
 
     /**

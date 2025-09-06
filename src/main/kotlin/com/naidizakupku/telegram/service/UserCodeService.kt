@@ -1,5 +1,6 @@
 package com.naidizakupku.telegram.service
 
+import com.naidizakupku.telegram.controller.CodeController
 import com.naidizakupku.telegram.domain.AuthRequest
 import com.naidizakupku.telegram.repository.AuthRequestRepository
 import com.naidizakupku.telegram.repository.UserCodeRepository
@@ -40,7 +41,8 @@ class UserCodeService(
      * Проверяет существование кода и не просрочен ли он для аутентификации.
      */
     @Transactional
-    fun verifyCodeForAuth(code: String, traceId: UUID): Boolean? {
+    fun verifyCodeForAuth(request: CodeController.VerificationRequest, traceId: UUID): Boolean? {
+        val code = request.code
         val existingCode = userCodeRepository.findByCodeAndNotExpired(code)
         if (existingCode == null) {
             logger.info("Код $code не найден или просрочен. $traceId")
