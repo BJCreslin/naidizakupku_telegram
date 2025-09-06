@@ -31,6 +31,12 @@ data class AuthRequest(
      * Время создания запроса
      */
     @Column(name = "requested_at", nullable = false)
-    val requestedAt: LocalDateTime = LocalDateTime.now()
+    val requestedAt: LocalDateTime = LocalDateTime.now(),
+    
+    /**
+     * Выданный код для аутентификации
+     */
+    @Column(name = "code", nullable = true, length = 10)
+    val code: String? = null
 )
 

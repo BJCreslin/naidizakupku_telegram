@@ -9,6 +9,7 @@
     <include file="db/changelog/changes/002-create-user-codes-table.xml"/>
     <include file="db/changelog/changes/003-create-verification-sessions-table.xml"/>
     <include file="db/changelog/changes/004-create-auth-requests-table.xml"/>
+    <include file="db/changelog/changes/005-add-code-to-auth-requests.xml"/>
 
 </databaseChangeLog>
 

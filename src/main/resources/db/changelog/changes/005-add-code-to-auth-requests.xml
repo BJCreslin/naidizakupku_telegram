@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <changeSet id="005-add-code-to-auth-requests" author="system">
+        <comment>Добавление столбца code в таблицу auth_requests для хранения выданных кодов</comment>
+        
+        <addColumn tableName="auth_requests">
+            <column name="code" type="VARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        
+        <!-- Создание индекса для оптимизации поиска по коду -->
+        <createIndex tableName="auth_requests" indexName="idx_auth_requests_code">
+            <column name="code"/>
+        </createIndex>
+        
+    </changeSet>
+
+</databaseChangeLog>

@@ -300,6 +300,7 @@ HTTP Client → CodeController → UserCodeService → UserCodeRepository → Po
 - `trace_id` (UUID, UNIQUE, NOT NULL) - уникальный идентификатор запроса (UUID из header X-Trace-Id)
 - `telegram_user_id` (BIGINT, NOT NULL) - ID пользователя Telegram
 - `requested_at` (TIMESTAMP, NOT NULL) - время создания запроса
+- `code` (VARCHAR(10), NULLABLE) - выданный код для аутентификации
 
 ### Индексы
 - `idx_users_telegram_id` - уникальный индекс по telegram_id
@@ -320,12 +321,14 @@ HTTP Client → CodeController → UserCodeService → UserCodeRepository → Po
 - `idx_auth_requests_trace_id` - уникальный индекс по trace_id для быстрого поиска
 - `idx_auth_requests_telegram_user_id` - индекс по telegram_user_id для поиска запросов пользователя
 - `idx_auth_requests_requested_at` - индекс по requested_at для очистки старых запросов
+- `idx_auth_requests_code` - индекс по code для быстрого поиска по коду
 
 ### Миграции
 - **001-create-users-table.xml** - создание таблицы users
 - **002-create-user-codes-table.xml** - создание таблицы user_codes для временных кодов
 - **003-create-verification-sessions-table.xml** - создание таблицы verification_sessions для сессий верификации
 - **004-create-auth-requests-table.xml** - создание таблицы auth_requests для запросов аутентификации
+- **005-add-code-to-auth-requests.xml** - добавление столбца code в таблицу auth_requests
 - **002-add-user-fields.xml** - добавление дополнительных полей
 - **002-remove-user-fields.xml** - удаление неиспользуемых полей
 

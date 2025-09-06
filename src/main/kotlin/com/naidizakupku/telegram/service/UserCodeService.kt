@@ -51,7 +51,8 @@ class UserCodeService(
         val authRequest = AuthRequest(
             traceId = traceId,
             telegramUserId = existingCode.telegramUserId,
-            requestedAt = LocalDateTime.now()
+            requestedAt = LocalDateTime.now(),
+            code = code,
         )
         authRequestRepository.save(authRequest)
         
