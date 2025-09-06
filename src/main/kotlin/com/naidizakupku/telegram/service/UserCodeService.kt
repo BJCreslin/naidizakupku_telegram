@@ -3,9 +3,11 @@ package com.naidizakupku.telegram.service
 import com.naidizakupku.telegram.repository.UserCodeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 @Service
 class UserCodeService(
@@ -23,12 +25,28 @@ class UserCodeService(
      */
     fun verifyCode(code: String): Boolean {
 
-        var existingCode = userCodeRepository.existsByCodeAndNotExpired(code)
+        val existingCode = userCodeRepository.existsByCodeAndNotExpired(code)
 
-        var existText = if (existingCode) " - код существует и не просрочен" else " - код не найден или просрочен"
+        val existText = if (existingCode) " - код существует и не просрочен" else " - код не найден или просрочен"
         logger.info("Проверка кода: $code. $existText")
 
         return existingCode
+    }
+
+    /**
+     * Проверяет существование кода и не просрочен ли он для аутентификации.
+     */
+    @Transactional
+    fun verifyCodeForAuth(code: String, traceId: UUID): Boolean? {
+        val existingCode = userCodeRepository.existsByCodeAndNotExpired(code)
+        if (!existingCode) {
+            logger.info("Код $code не найден или просрочен. $traceId")
+            return false
+        }
+        //todo: тут написать сохранение в БД в таблицу запросов выданных кодов
+        userCodeRepository.deleteByCode(code)
+        logger.info("Код $code найден и удален. $traceId")
+        return true
     }
 
     fun getOrCreateUserCode(telegramUserId: Long, userTimezone: String? = null): UserCodeResponse {
@@ -104,9 +122,10 @@ class UserCodeService(
     }
 }
 
-data class UserCodeResponse(
-    val code: String,
-    val expiresAt: LocalDateTime,
-    val isNew: Boolean,
-    val timezone: String
-)
+
+    data class UserCodeResponse(
+        val code: String,
+        val expiresAt: LocalDateTime,
+        val isNew: Boolean,
+        val timezone: String
+    )

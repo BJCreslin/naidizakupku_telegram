@@ -4,6 +4,7 @@ import com.naidizakupku.telegram.service.KafkaVerificationService
 import com.naidizakupku.telegram.service.UserCodeService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import org.springframework.messaging.handler.annotation.Header
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
@@ -24,6 +25,17 @@ class CodeController(
         @RequestBody request: VerificationRequest,
     ): ResponseEntity<Boolean> {
         return ResponseEntity.ok().body(userCodeService.verifyCode(request.code))
+    }
+
+    /**
+     * Endpoint для отправки кода для аутентификации
+     */
+    @PostMapping("/auth")
+    fun sendCode(
+        @RequestBody request: VerificationRequest,
+        @Header("X-Trace-Id") traceId: UUID
+    ): ResponseEntity<Boolean> {
+        return ResponseEntity.ok().body(userCodeService.verifyCodeForAuth(request.code, traceId))
     }
 
     /**
