@@ -15,9 +15,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
-class TelegramNotificationService(
-    private val telegramBot: TelegramLongPollingBot
-) {
+class TelegramNotificationService() {
     
     private val logger = LoggerFactory.getLogger(TelegramNotificationService::class.java)
     
@@ -28,6 +26,7 @@ class TelegramNotificationService(
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     
     fun sendVerificationRequest(
+        telegramBot: TelegramLongPollingBot,
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
@@ -47,7 +46,7 @@ class TelegramNotificationService(
         }
     }
     
-    fun updateMessageToConfirmed(chatId: Long, messageId: Long): Boolean {
+    fun updateMessageToConfirmed(telegramBot: TelegramLongPollingBot, chatId: Long, messageId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
@@ -63,7 +62,7 @@ class TelegramNotificationService(
         }
     }
     
-    fun updateMessageToRevoking(chatId: Long, messageId: Long): Boolean {
+    fun updateMessageToRevoking(telegramBot: TelegramLongPollingBot, chatId: Long, messageId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
@@ -79,7 +78,7 @@ class TelegramNotificationService(
         }
     }
     
-    fun sendRevocationConfirmed(chatId: Long): Boolean {
+    fun sendRevocationConfirmed(telegramBot: TelegramLongPollingBot, chatId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
@@ -99,6 +98,7 @@ class TelegramNotificationService(
      * Отправляет уведомление о запросе авторизации с кнопками подтверждения
      */
     fun sendAuthConfirmationRequest(
+        telegramBot: TelegramLongPollingBot,
         telegramUserId: Long,
         traceId: UUID,
         ip: String?,
@@ -124,7 +124,7 @@ class TelegramNotificationService(
     /**
      * Удаляет кнопки из сообщения подтверждения авторизации
      */
-    fun removeAuthConfirmationButtons(telegramUserId: Long, traceId: UUID): Boolean {
+    fun removeAuthConfirmationButtons(telegramBot: TelegramLongPollingBot, telegramUserId: Long, traceId: UUID): Boolean {
         try {
             val message = SendMessage()
             message.chatId = telegramUserId.toString()
@@ -143,7 +143,7 @@ class TelegramNotificationService(
     /**
      * Отправляет сообщение об отзыве авторизации
      */
-    fun sendAuthRevokedMessage(telegramUserId: Long): Boolean {
+    fun sendAuthRevokedMessage(telegramBot: TelegramLongPollingBot, telegramUserId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = telegramUserId.toString()
