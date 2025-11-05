@@ -5,7 +5,7 @@ Telegram-бот для поиска и покупки товаров с инте
 
 ## Технологический стек
 - **Язык**: Kotlin 2.0
-- **Фреймворк**: Spring Boot 3.3
+- **Фреймворк**: Spring Boot 3.5.0
 - **JDK**: 21
 - **Сборка**: Gradle Kotlin DSL
 - **База данных**: PostgreSQL + Spring Data JPA
