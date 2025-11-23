@@ -37,20 +37,16 @@ class TelegramNotificationService() {
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
-        try {
-            val message = buildVerificationMessage(session, browserInfo)
-            val keyboard = buildVerificationKeyboard(session.correlationId)
-            
-            message.replyMarkup = keyboard
-            
-            val result = telegramBot.execute(message)
-            logger.info("Сообщение верификации отправлено: messageId=${result.messageId}")
-            return result.messageId.toLong()
-            
-        } catch (e: TelegramApiException) {
-            logger.warn("Попытка отправки сообщения верификации не удалась: ${e.message}")
-            throw e // Пробрасываем для retry
-        }
+        val message = buildVerificationMessage(session, browserInfo)
+        val keyboard = buildVerificationKeyboard(session.correlationId)
+        
+        return sendMessageWithKeyboard(
+            telegramBot = telegramBot,
+            message = message,
+            keyboard = keyboard,
+            successLogMessage = "Сообщение верификации отправлено",
+            errorLogMessage = "Попытка отправки сообщения верификации не удалась"
+        )
     }
     
     @Recover
@@ -65,51 +61,30 @@ class TelegramNotificationService() {
     }
     
     fun updateMessageToConfirmed(telegramBot: TelegramBotExecutor, chatId: Long, messageId: Long): Boolean {
-        try {
-            val message = SendMessage()
-            message.chatId = chatId.toString()
-            message.text = "✅ Авторизация подтверждена"
-            
-            telegramBot.execute(message)
-            logger.info("Сообщение обновлено на подтверждено: messageId=$messageId")
-            return true
-            
-        } catch (e: TelegramApiException) {
-            logger.error("Ошибка обновления сообщения: ${e.message}", e)
-            return false
-        }
+        return sendSimpleMessage(
+            telegramBot = telegramBot,
+            chatId = chatId,
+            text = "✅ Авторизация подтверждена",
+            logMessage = "Сообщение обновлено на подтверждено: messageId=$messageId"
+        )
     }
     
     fun updateMessageToRevoking(telegramBot: TelegramBotExecutor, chatId: Long, messageId: Long): Boolean {
-        try {
-            val message = SendMessage()
-            message.chatId = chatId.toString()
-            message.text = "⏳ Отзываем авторизацию..."
-            
-            telegramBot.execute(message)
-            logger.info("Сообщение обновлено на отзыв: messageId=$messageId")
-            return true
-            
-        } catch (e: TelegramApiException) {
-            logger.error("Ошибка обновления сообщения: ${e.message}", e)
-            return false
-        }
+        return sendSimpleMessage(
+            telegramBot = telegramBot,
+            chatId = chatId,
+            text = "⏳ Отзываем авторизацию...",
+            logMessage = "Сообщение обновлено на отзыв: messageId=$messageId"
+        )
     }
     
     fun sendRevocationConfirmed(telegramBot: TelegramBotExecutor, chatId: Long): Boolean {
-        try {
-            val message = SendMessage()
-            message.chatId = chatId.toString()
-            message.text = "❌ Авторизация отозвана"
-            
-            telegramBot.execute(message)
-            logger.info("Сообщение об отзыве отправлено: chatId=$chatId")
-            return true
-            
-        } catch (e: TelegramApiException) {
-            logger.error("Ошибка отправки сообщения об отзыве: ${e.message}", e)
-            return false
-        }
+        return sendSimpleMessage(
+            telegramBot = telegramBot,
+            chatId = chatId,
+            text = "❌ Авторизация отозвана",
+            logMessage = "Сообщение об отзыве отправлено: chatId=$chatId"
+        )
     }
 
     /**
@@ -128,20 +103,16 @@ class TelegramNotificationService() {
         userAgent: String?,
         location: String?
     ): Long? {
-        try {
-            val message = buildAuthConfirmationMessage(telegramUserId, traceId, ip, userAgent, location)
-            val keyboard = buildAuthConfirmationKeyboard(traceId)
-            
-            message.replyMarkup = keyboard
-            
-            val result = telegramBot.execute(message)
-            logger.info("Сообщение подтверждения авторизации отправлено: messageId=${result.messageId}")
-            return result.messageId.toLong()
-            
-        } catch (e: TelegramApiException) {
-            logger.warn("Попытка отправки сообщения подтверждения авторизации не удалась: ${e.message}")
-            throw e // Пробрасываем для retry
-        }
+        val message = buildAuthConfirmationMessage(telegramUserId, traceId, ip, userAgent, location)
+        val keyboard = buildAuthConfirmationKeyboard(traceId)
+        
+        return sendMessageWithKeyboard(
+            telegramBot = telegramBot,
+            message = message,
+            keyboard = keyboard,
+            successLogMessage = "Сообщение подтверждения авторизации отправлено",
+            errorLogMessage = "Попытка отправки сообщения подтверждения авторизации не удалась"
+        )
     }
     
     @Recover
@@ -162,38 +133,26 @@ class TelegramNotificationService() {
      * Удаляет кнопки из сообщения подтверждения авторизации
      */
     fun removeAuthConfirmationButtons(telegramBot: TelegramBotExecutor, telegramUserId: Long, traceId: UUID): Boolean {
-        try {
-            val message = SendMessage()
-            message.chatId = telegramUserId.toString()
-            message.text = "✅ Авторизация подтверждена"
-            
-            telegramBot.execute(message)
-            logger.info("Кнопки подтверждения удалены для traceId $traceId")
-            return true
-            
-        } catch (e: TelegramApiException) {
-            logger.error("Ошибка удаления кнопок подтверждения: ${e.message}", e)
-            return false
-        }
+        return sendSimpleMessage(
+            telegramBot = telegramBot,
+            chatId = telegramUserId,
+            text = "✅ Авторизация подтверждена",
+            logMessage = "Кнопки подтверждения удалены для traceId $traceId",
+            errorMessage = "Ошибка удаления кнопок подтверждения"
+        )
     }
 
     /**
      * Отправляет сообщение об отзыве авторизации
      */
     fun sendAuthRevokedMessage(telegramBot: TelegramBotExecutor, telegramUserId: Long): Boolean {
-        try {
-            val message = SendMessage()
-            message.chatId = telegramUserId.toString()
-            message.text = "❌ Авторизация отозвана"
-            
-            telegramBot.execute(message)
-            logger.info("Сообщение об отзыве авторизации отправлено: telegramUserId=$telegramUserId")
-            return true
-            
-        } catch (e: TelegramApiException) {
-            logger.error("Ошибка отправки сообщения об отзыве авторизации: ${e.message}", e)
-            return false
-        }
+        return sendSimpleMessage(
+            telegramBot = telegramBot,
+            chatId = telegramUserId,
+            text = "❌ Авторизация отозвана",
+            logMessage = "Сообщение об отзыве авторизации отправлено: telegramUserId=$telegramUserId",
+            errorMessage = "Ошибка отправки сообщения об отзыве авторизации"
+        )
     }
     
     private fun buildVerificationMessage(
@@ -286,5 +245,53 @@ class TelegramNotificationService() {
         keyboard.keyboard = listOf(row)
         
         return keyboard
+    }
+    
+    /**
+     * Общий метод для отправки простого текстового сообщения
+     */
+    private fun sendSimpleMessage(
+        telegramBot: TelegramBotExecutor,
+        chatId: Long,
+        text: String,
+        logMessage: String,
+        errorMessage: String = "Ошибка отправки сообщения"
+    ): Boolean {
+        return try {
+            val message = SendMessage().apply {
+                this.chatId = chatId.toString()
+                this.text = text
+            }
+            
+            telegramBot.execute(message)
+            logger.info(logMessage)
+            true
+            
+        } catch (e: TelegramApiException) {
+            logger.error("$errorMessage: ${e.message}", e)
+            false
+        }
+    }
+    
+    /**
+     * Общий метод для отправки сообщения с клавиатурой (с поддержкой retry)
+     */
+    private fun sendMessageWithKeyboard(
+        telegramBot: TelegramBotExecutor,
+        message: SendMessage,
+        keyboard: InlineKeyboardMarkup,
+        successLogMessage: String,
+        errorLogMessage: String
+    ): Long? {
+        return try {
+            message.replyMarkup = keyboard
+            val result = telegramBot.execute(message)
+            logger.info("$successLogMessage: messageId=${result.messageId}")
+            result.messageId.toLong()
+            
+        } catch (e: TelegramApiException) {
+            logger.warn("$errorLogMessage: ${e.message}")
+            throw e // Пробрасываем для retry
+        }
     }
 }
