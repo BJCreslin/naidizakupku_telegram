@@ -25,7 +25,11 @@ class TelegramBotService(
     private val telegramCodeHandler: TelegramCodeHandler,
     private val userCodeService: UserCodeService,
     @Autowired(required = false) private val coroutineScope: CoroutineScope? = null
-) : TelegramLongPollingBot(telegramConfig.botToken) {
+) : TelegramLongPollingBot(telegramConfig.botToken), TelegramBotExecutor {
+    
+    override fun execute(message: SendMessage): org.telegram.telegrambots.meta.api.objects.Message {
+        return super.execute(message)
+    }
     
     // Используем переданный scope или создаем новый с Dispatchers.IO
     private val scope: CoroutineScope = coroutineScope ?: CoroutineScope(Dispatchers.IO)

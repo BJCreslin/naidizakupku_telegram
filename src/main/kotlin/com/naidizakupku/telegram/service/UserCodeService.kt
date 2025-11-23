@@ -7,7 +7,6 @@ import com.naidizakupku.telegram.repository.UserCodeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
-import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.TransactionException
@@ -24,7 +23,7 @@ class UserCodeService(
     private val codeGenerationService: CodeGenerationService,
     private val telegramNotificationService: TelegramNotificationService,
     private val kafkaProducerService: KafkaProducerService,
-    @Lazy private val telegramBotService: TelegramBotService
+    private val telegramBotExecutor: TelegramBotExecutor
 ) {
 
     companion object {
@@ -76,7 +75,7 @@ class UserCodeService(
                     
                     // Отправляем уведомление в Telegram с кнопками подтверждения
                     telegramNotificationService.sendAuthConfirmationRequest(
-                        telegramBot = telegramBotService,
+                        telegramBot = telegramBotExecutor,
                         telegramUserId = existingCode.telegramUserId,
                         traceId = traceId,
                         ip = request.ip,
@@ -210,7 +209,7 @@ class UserCodeService(
             authRequestRepository.deleteByTraceId(traceId)
             
             // Удаляем кнопки из Telegram сообщения
-            telegramNotificationService.removeAuthConfirmationButtons(telegramBotService, authRequest.telegramUserId, traceId)
+            telegramNotificationService.removeAuthConfirmationButtons(telegramBotExecutor, authRequest.telegramUserId, traceId)
             
             logger.info("Вход подтвержден для traceId $traceId")
             true
@@ -249,7 +248,7 @@ class UserCodeService(
             authRequestRepository.deleteByTraceId(traceId)
             
             // Уведомляем пользователя об отзыве
-            telegramNotificationService.sendAuthRevokedMessage(telegramBotService, authRequest.telegramUserId)
+            telegramNotificationService.sendAuthRevokedMessage(telegramBotExecutor, authRequest.telegramUserId)
             
             logger.info("Вход отозван для traceId $traceId")
             true

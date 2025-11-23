@@ -8,7 +8,6 @@ import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Recover
 import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Service
-import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
@@ -34,7 +33,7 @@ class TelegramNotificationService() {
         backoff = Backoff(delay = 1000, multiplier = 2.0)
     )
     fun sendVerificationRequest(
-        telegramBot: TelegramLongPollingBot,
+        telegramBot: TelegramBotExecutor,
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
@@ -57,7 +56,7 @@ class TelegramNotificationService() {
     @Recover
     fun recoverSendVerificationRequest(
         e: TelegramApiException,
-        telegramBot: TelegramLongPollingBot,
+        telegramBot: TelegramBotExecutor,
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
@@ -65,7 +64,7 @@ class TelegramNotificationService() {
         return null
     }
     
-    fun updateMessageToConfirmed(telegramBot: TelegramLongPollingBot, chatId: Long, messageId: Long): Boolean {
+    fun updateMessageToConfirmed(telegramBot: TelegramBotExecutor, chatId: Long, messageId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
@@ -81,7 +80,7 @@ class TelegramNotificationService() {
         }
     }
     
-    fun updateMessageToRevoking(telegramBot: TelegramLongPollingBot, chatId: Long, messageId: Long): Boolean {
+    fun updateMessageToRevoking(telegramBot: TelegramBotExecutor, chatId: Long, messageId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
@@ -97,7 +96,7 @@ class TelegramNotificationService() {
         }
     }
     
-    fun sendRevocationConfirmed(telegramBot: TelegramLongPollingBot, chatId: Long): Boolean {
+    fun sendRevocationConfirmed(telegramBot: TelegramBotExecutor, chatId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = chatId.toString()
@@ -122,7 +121,7 @@ class TelegramNotificationService() {
         backoff = Backoff(delay = 1000, multiplier = 2.0)
     )
     fun sendAuthConfirmationRequest(
-        telegramBot: TelegramLongPollingBot,
+        telegramBot: TelegramBotExecutor,
         telegramUserId: Long,
         traceId: UUID,
         ip: String?,
@@ -148,7 +147,7 @@ class TelegramNotificationService() {
     @Recover
     fun recoverSendAuthConfirmationRequest(
         e: TelegramApiException,
-        telegramBot: TelegramLongPollingBot,
+        telegramBot: TelegramBotExecutor,
         telegramUserId: Long,
         traceId: UUID,
         ip: String?,
@@ -162,7 +161,7 @@ class TelegramNotificationService() {
     /**
      * Удаляет кнопки из сообщения подтверждения авторизации
      */
-    fun removeAuthConfirmationButtons(telegramBot: TelegramLongPollingBot, telegramUserId: Long, traceId: UUID): Boolean {
+    fun removeAuthConfirmationButtons(telegramBot: TelegramBotExecutor, telegramUserId: Long, traceId: UUID): Boolean {
         try {
             val message = SendMessage()
             message.chatId = telegramUserId.toString()
@@ -181,7 +180,7 @@ class TelegramNotificationService() {
     /**
      * Отправляет сообщение об отзыве авторизации
      */
-    fun sendAuthRevokedMessage(telegramBot: TelegramLongPollingBot, telegramUserId: Long): Boolean {
+    fun sendAuthRevokedMessage(telegramBot: TelegramBotExecutor, telegramUserId: Long): Boolean {
         try {
             val message = SendMessage()
             message.chatId = telegramUserId.toString()
