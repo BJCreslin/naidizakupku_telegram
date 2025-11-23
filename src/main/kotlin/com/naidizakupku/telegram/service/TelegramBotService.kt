@@ -2,8 +2,11 @@ package com.naidizakupku.telegram.service
 
 import com.naidizakupku.telegram.config.TelegramConfig
 import com.naidizakupku.telegram.handler.TelegramCodeHandler
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
@@ -20,8 +23,12 @@ class TelegramBotService(
     private val telegramConfig: TelegramConfig,
     private val userService: UserServiceInterface,
     private val telegramCodeHandler: TelegramCodeHandler,
-    private val userCodeService: UserCodeService
+    private val userCodeService: UserCodeService,
+    @Autowired(required = false) private val coroutineScope: CoroutineScope? = null
 ) : TelegramLongPollingBot(telegramConfig.botToken) {
+    
+    // Используем переданный scope или создаем новый с Dispatchers.IO
+    private val scope: CoroutineScope = coroutineScope ?: CoroutineScope(Dispatchers.IO)
 
     private val logger = LoggerFactory.getLogger(TelegramBotService::class.java)
 
@@ -49,14 +56,18 @@ class TelegramBotService(
 
                 logger.info("Получено сообщение от пользователя $userId: $text")
 
-                // Сохраняем/обновляем пользователя
-                runBlocking {
-                    userService.saveOrUpdateUser(
-                        userId,
-                        message.from.firstName,
-                        message.from.lastName,
-                        message.from.userName
-                    )
+                // Сохраняем/обновляем пользователя асинхронно
+                scope.launch {
+                    try {
+                        userService.saveOrUpdateUser(
+                            userId,
+                            message.from.firstName,
+                            message.from.lastName,
+                            message.from.userName
+                        )
+                    } catch (e: Exception) {
+                        logger.error("Ошибка при сохранении/обновлении пользователя $userId", e)
+                    }
                 }
 
                 // Обработка команд
