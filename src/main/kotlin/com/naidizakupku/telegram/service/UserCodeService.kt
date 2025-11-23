@@ -47,43 +47,53 @@ class UserCodeService(
      * Проверяет существование кода и не просрочен ли он для аутентификации.
      */
     @Transactional
-    fun verifyCodeForAuth(request: CodeController.VerificationRequest, traceId: UUID): Boolean? {
+    fun verifyCodeForAuth(request: CodeController.VerificationRequest, traceId: UUID): AuthVerificationResult {
         val code = request.code
         val now = LocalDateTime.now()
         val existingCode = userCodeRepository.findByCodeAndNotExpired(code, now)
-        if (existingCode == null) {
-            logger.info("Код $code не найден или просрочен. $traceId")
-            return false
+        
+        return when {
+            existingCode == null -> {
+                logger.info("Код $code не найден или просрочен. $traceId")
+                AuthVerificationResult.CodeNotFound
+            }
+            existingCode.isExpired() -> {
+                logger.info("Код $code просрочен. $traceId")
+                AuthVerificationResult.CodeExpired
+            }
+            else -> {
+                try {
+                    // Сохраняем запрос аутентификации в БД
+                    val authRequest = AuthRequest(
+                        traceId = traceId,
+                        telegramUserId = existingCode.telegramUserId,
+                        requestedAt = LocalDateTime.now(),
+                        code = code,
+                    )
+                    authRequestRepository.save(authRequest)
+                    
+                    // Отправляем уведомление в Telegram с кнопками подтверждения
+                    telegramNotificationService.sendAuthConfirmationRequest(
+                        telegramBot = telegramBotService,
+                        telegramUserId = existingCode.telegramUserId,
+                        traceId = traceId,
+                        ip = request.ip,
+                        userAgent = request.userAgent,
+                        location = request.location
+                    )
+                    logger.info("Отправлено уведомление о входе пользователю ${existingCode.telegramUserId} для traceId $traceId")
+                    
+                    // Удаляем использованный код
+                    userCodeRepository.deleteByCode(code)
+                    logger.info("Код $code найден, запрос сохранен и код удален. $traceId")
+                    
+                    AuthVerificationResult.Success
+                } catch (e: Exception) {
+                    logger.error("Ошибка при верификации кода для traceId $traceId", e)
+                    AuthVerificationResult.Error(e.message ?: "Неизвестная ошибка")
+                }
+            }
         }
-        
-        // Сохраняем запрос аутентификации в БД
-        val authRequest = AuthRequest(
-            traceId = traceId,
-            telegramUserId = existingCode.telegramUserId,
-            requestedAt = LocalDateTime.now(),
-            code = code,
-        )
-        authRequestRepository.save(authRequest)
-        
-        // Отправляем уведомление в Telegram с кнопками подтверждения
-        try {
-            telegramNotificationService.sendAuthConfirmationRequest(
-                telegramBot = telegramBotService,
-                telegramUserId = existingCode.telegramUserId,
-                traceId = traceId,
-                ip = request.ip,
-                userAgent = request.userAgent,
-                location = request.location
-            )
-            logger.info("Отправлено уведомление о входе пользователю ${existingCode.telegramUserId} для traceId $traceId")
-        } catch (e: Exception) {
-            logger.error("Ошибка отправки уведомления в Telegram для traceId $traceId", e)
-        }
-        
-        // Удаляем использованный код
-        userCodeRepository.deleteByCode(code)
-        logger.info("Код $code найден, запрос сохранен и код удален. $traceId")
-        return true
     }
 
     fun getOrCreateUserCode(telegramUserId: Long, userTimezone: String? = null): UserCodeResponse {
@@ -231,6 +241,16 @@ class UserCodeService(
             logger.error("Ошибка при отзыве входа для traceId $traceId", e)
             false
         }
+    }
+    
+    /**
+     * Результат верификации кода для аутентификации
+     */
+    sealed class AuthVerificationResult {
+        data object Success : AuthVerificationResult()
+        data object CodeNotFound : AuthVerificationResult()
+        data object CodeExpired : AuthVerificationResult()
+        data class Error(val message: String) : AuthVerificationResult()
     }
 }
 

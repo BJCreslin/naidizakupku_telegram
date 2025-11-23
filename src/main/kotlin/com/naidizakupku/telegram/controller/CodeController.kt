@@ -38,8 +38,35 @@ class CodeController(
     fun sendCode(
         @RequestBody @Valid request: VerificationRequest,
         @Header("X-Trace-Id") traceId: UUID
-    ): ResponseEntity<Boolean> {
-        return ResponseEntity.ok().body(userCodeService.verifyCodeForAuth(request, traceId))
+    ): ResponseEntity<Map<String, Any>> {
+        val result = userCodeService.verifyCodeForAuth(request, traceId)
+        
+        return when (result) {
+            is UserCodeService.AuthVerificationResult.Success -> {
+                ResponseEntity.ok(mapOf(
+                    "success" to true,
+                    "message" to "Код верифицирован, запрос отправлен пользователю"
+                ))
+            }
+            is UserCodeService.AuthVerificationResult.CodeNotFound -> {
+                ResponseEntity.badRequest().body(mapOf(
+                    "success" to false,
+                    "error" to "Код не найден или просрочен"
+                ))
+            }
+            is UserCodeService.AuthVerificationResult.CodeExpired -> {
+                ResponseEntity.badRequest().body(mapOf(
+                    "success" to false,
+                    "error" to "Код просрочен"
+                ))
+            }
+            is UserCodeService.AuthVerificationResult.Error -> {
+                ResponseEntity.status(500).body(mapOf(
+                    "success" to false,
+                    "error" to result.message
+                ))
+            }
+        }
     }
 
     /**
