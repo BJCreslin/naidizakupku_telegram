@@ -34,8 +34,8 @@ class UserCodeService(
      * Проверяет существование кода и не просрочен ли он
      */
     fun verifyCode(code: String): Boolean {
-
-        val existingCode = userCodeRepository.existsByCodeAndNotExpired(code)
+        val now = LocalDateTime.now()
+        val existingCode = userCodeRepository.existsByCodeAndNotExpired(code, now)
 
         val existText = if (existingCode) " - код существует и не просрочен" else " - код не найден или просрочен"
         logger.info("Проверка кода: $code. $existText")
@@ -49,7 +49,8 @@ class UserCodeService(
     @Transactional
     fun verifyCodeForAuth(request: CodeController.VerificationRequest, traceId: UUID): Boolean? {
         val code = request.code
-        val existingCode = userCodeRepository.findByCodeAndNotExpired(code)
+        val now = LocalDateTime.now()
+        val existingCode = userCodeRepository.findByCodeAndNotExpired(code, now)
         if (existingCode == null) {
             logger.info("Код $code не найден или просрочен. $traceId")
             return false
@@ -88,7 +89,8 @@ class UserCodeService(
     fun getOrCreateUserCode(telegramUserId: Long, userTimezone: String? = null): UserCodeResponse {
         try {
             // Проверяем существующий активный код
-            val existingCode = userCodeRepository.findActiveCodeByTelegramUserId(telegramUserId)
+            val now = LocalDateTime.now()
+            val existingCode = userCodeRepository.findActiveCodeByTelegramUserId(telegramUserId, now)
 
             if (existingCode != null) {
                 logger.info("Найден существующий код для пользователя $telegramUserId: ${existingCode.code}")

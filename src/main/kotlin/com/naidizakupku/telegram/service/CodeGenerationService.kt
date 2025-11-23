@@ -33,7 +33,7 @@ class CodeGenerationService(
                 logger.error("Не удалось сгенерировать уникальный код после $MAX_ATTEMPTS попыток")
                 throw RuntimeException("Не удалось сгенерировать уникальный код")
             }
-        } while (userCodeRepository.existsByCodeAndNotExpired(code))
+        } while (userCodeRepository.existsByCodeAndNotExpired(code, LocalDateTime.now()))
         
         logger.info("Сгенерирован уникальный код: $code за $attempts попыток")
         return code

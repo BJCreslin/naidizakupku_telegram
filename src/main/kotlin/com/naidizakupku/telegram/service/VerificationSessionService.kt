@@ -8,6 +8,7 @@ import com.naidizakupku.telegram.repository.VerificationSessionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -23,7 +24,8 @@ class VerificationSessionService(
         userBrowserInfo: UserBrowserInfoDto
     ): VerificationSession? {
         // Проверяем, что код существует и не просрочен
-        val userCode = userCodeRepository.findByCodeAndNotExpired(code)
+        val now = LocalDateTime.now()
+        val userCode = userCodeRepository.findByCodeAndNotExpired(code, now)
             ?: return null
 
         val session = VerificationSession(
