@@ -2,6 +2,11 @@ spring:
   application:
     name: naidizakupku-telegram
   
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=5m
+  
   datasource:
       url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/telegram_db}
       username: ${POSTGRES_USER:}

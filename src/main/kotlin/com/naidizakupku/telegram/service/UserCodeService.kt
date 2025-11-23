@@ -5,6 +5,8 @@ import com.naidizakupku.telegram.domain.AuthRequest
 import com.naidizakupku.telegram.repository.AuthRequestRepository
 import com.naidizakupku.telegram.repository.UserCodeRepository
 import org.slf4j.LoggerFactory
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.annotation.Lazy
 import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
@@ -83,8 +85,9 @@ class UserCodeService(
                     )
                     logger.info("Отправлено уведомление о входе пользователю ${existingCode.telegramUserId} для traceId $traceId")
                     
-                    // Удаляем использованный код
+                    // Удаляем использованный код и инвалидируем кэш
                     userCodeRepository.deleteByCode(code)
+                    evictUserCodeCache(existingCode.telegramUserId)
                     logger.info("Код $code найден, запрос сохранен и код удален. $traceId")
                     
                     AuthVerificationResult.Success
@@ -96,6 +99,7 @@ class UserCodeService(
         }
     }
 
+    @Cacheable(value = ["userCodes"], key = "#telegramUserId")
     fun getOrCreateUserCode(telegramUserId: Long, userTimezone: String? = null): UserCodeResponse {
         try {
             // Проверяем существующий активный код
@@ -115,6 +119,9 @@ class UserCodeService(
             // Создаем новый код
             val newCode = codeGenerationService.createUserCode(telegramUserId)
             logger.info("Создан новый код для пользователя $telegramUserId: ${newCode.code}")
+            
+            // Инвалидируем кэш при создании нового кода
+            evictUserCodeCache(telegramUserId)
 
             return UserCodeResponse(
                 code = newCode.code,
@@ -138,6 +145,7 @@ class UserCodeService(
         }
     }
 
+    @CacheEvict(value = ["userCodes"], allEntries = true)
     fun cleanupExpiredCodes() {
         try {
             val now = LocalDateTime.now()
@@ -150,6 +158,14 @@ class UserCodeService(
         } catch (e: Exception) {
             logger.error("Ошибка при очистке просроченных кодов", e)
         }
+    }
+    
+    /**
+     * Инвалидирует кэш для конкретного пользователя
+     */
+    @CacheEvict(value = ["userCodes"], key = "#telegramUserId")
+    private fun evictUserCodeCache(telegramUserId: Long) {
+        // Метод используется только для инвалидации кэша через AOP
     }
 
     fun formatExpirationTime(expiresAt: LocalDateTime, timezone: String): String {
