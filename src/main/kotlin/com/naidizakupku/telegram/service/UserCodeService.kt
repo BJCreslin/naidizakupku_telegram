@@ -6,7 +6,9 @@ import com.naidizakupku.telegram.repository.AuthRequestRepository
 import com.naidizakupku.telegram.repository.UserCodeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Lazy
+import org.springframework.dao.DataAccessException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.TransactionException
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -109,9 +111,18 @@ class UserCodeService(
                 timezone = userTimezone ?: "UTC+3"
             )
 
+        } catch (e: DataAccessException) {
+            logger.error("Ошибка доступа к БД при получении кода для пользователя $telegramUserId", e)
+            throw CodeServiceException("Ошибка базы данных", e)
+        } catch (e: TransactionException) {
+            logger.error("Ошибка транзакции при получении кода для пользователя $telegramUserId", e)
+            throw CodeServiceException("Ошибка транзакции", e)
+        } catch (e: IllegalArgumentException) {
+            logger.error("Некорректные параметры для пользователя $telegramUserId", e)
+            throw e
         } catch (e: Exception) {
-            logger.error("Ошибка при получении/создании кода для пользователя $telegramUserId", e)
-            throw RuntimeException("Не удалось получить код", e)
+            logger.error("Неожиданная ошибка при получении кода для пользователя $telegramUserId", e)
+            throw CodeServiceException("Внутренняя ошибка сервиса", e)
         }
     }
 
