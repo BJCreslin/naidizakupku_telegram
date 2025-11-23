@@ -2,6 +2,10 @@ package com.naidizakupku.telegram.controller
 
 import com.naidizakupku.telegram.service.KafkaVerificationService
 import com.naidizakupku.telegram.service.UserCodeService
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.messaging.handler.annotation.Header
@@ -22,7 +26,7 @@ class CodeController(
      */
     @PostMapping("/verify")
     fun verifyCode(
-        @RequestBody request: VerificationRequest,
+        @RequestBody @Valid request: VerificationRequest,
     ): ResponseEntity<Boolean> {
         return ResponseEntity.ok().body(userCodeService.verifyCode(request.code))
     }
@@ -32,7 +36,7 @@ class CodeController(
      */
     @PostMapping("/auth")
     fun sendCode(
-        @RequestBody request: VerificationRequest,
+        @RequestBody @Valid request: VerificationRequest,
         @Header("X-Trace-Id") traceId: UUID
     ): ResponseEntity<Boolean> {
         return ResponseEntity.ok().body(userCodeService.verifyCodeForAuth(request, traceId))
@@ -66,12 +70,20 @@ class CodeController(
 
     data class VerificationRequest(
         /** Код для проверки */
+        @field:NotBlank(message = "Код обязателен")
+        @field:Pattern(regexp = "^[1-9]\\d{6}$", message = "Код должен быть 7-значным числом, начинающимся не с 0")
         val code: String,
-        /*** IP адрес запрашиваемого */
+        
+        /** IP адрес запрашиваемого */
+        @field:Pattern(regexp = "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", message = "Некорректный IP адрес")
         val ip: String? = null,
-        /*** User Agent запрашиваемого */
+        
+        /** User Agent запрашиваемого */
+        @field:Size(max = 500, message = "User-Agent не должен превышать 500 символов")
         val userAgent: String? = null,
-        /*** Локация запрашиваемого */
+        
+        /** Локация запрашиваемого */
+        @field:Size(max = 200, message = "Локация не должна превышать 200 символов")
         val location: String? = null
     )
 }
