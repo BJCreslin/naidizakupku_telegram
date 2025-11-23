@@ -45,6 +45,8 @@ docker-compose up -d zookeeper kafka
 
 5. **Проверьте работу:**
 - Приложение: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- API документация (JSON): http://localhost:8080/api-docs
 - Telegram бот: найдите бота по username и отправьте сообщение
 - Kafka UI: http://localhost:8081 (в продакшене)
 - Health check: http://localhost:8080/actuator/health
@@ -124,6 +126,14 @@ sudo chmod +x /usr/local/bin/docker-compose
 3. **Обновляйте документацию** при изменении архитектуры
 
 ## API Endpoints
+
+### Документация API
+
+API документация доступна через Swagger UI:
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON**: http://localhost:8080/api-docs
+
+Swagger UI предоставляет интерактивный интерфейс для тестирования всех API endpoints с полным описанием параметров, примеров запросов и ответов.
 
 ### Пользователи
 

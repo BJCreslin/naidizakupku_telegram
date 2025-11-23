@@ -93,6 +93,17 @@ telegram:
     expiration:
       minutes: ${TELEGRAM_CODE_EXPIRATION_MINUTES:5}
 
+# OpenAPI/Swagger конфигурация
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+
 logging:
   level:
     com.naidizakupku.telegram: INFO
