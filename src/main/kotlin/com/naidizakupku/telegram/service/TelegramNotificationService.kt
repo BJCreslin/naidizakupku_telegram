@@ -4,6 +4,9 @@ import com.naidizakupku.telegram.domain.dto.UserBrowserInfoDto
 import com.naidizakupku.telegram.domain.entity.VerificationSession
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Recover
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -25,6 +28,11 @@ class TelegramNotificationService() {
     private val moscowZone = ZoneId.of("Europe/Moscow")
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     
+    @Retryable(
+        value = [TelegramApiException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 1000, multiplier = 2.0)
+    )
     fun sendVerificationRequest(
         telegramBot: TelegramLongPollingBot,
         session: VerificationSession,
@@ -41,9 +49,20 @@ class TelegramNotificationService() {
             return result.messageId.toLong()
             
         } catch (e: TelegramApiException) {
-            logger.error("Ошибка отправки сообщения верификации: ${e.message}", e)
-            return null
+            logger.warn("Попытка отправки сообщения верификации не удалась: ${e.message}")
+            throw e // Пробрасываем для retry
         }
+    }
+    
+    @Recover
+    fun recoverSendVerificationRequest(
+        e: TelegramApiException,
+        telegramBot: TelegramLongPollingBot,
+        session: VerificationSession,
+        browserInfo: UserBrowserInfoDto
+    ): Long? {
+        logger.error("Все попытки отправки сообщения верификации исчерпаны: correlationId=${session.correlationId}", e)
+        return null
     }
     
     fun updateMessageToConfirmed(telegramBot: TelegramLongPollingBot, chatId: Long, messageId: Long): Boolean {
@@ -97,6 +116,11 @@ class TelegramNotificationService() {
     /**
      * Отправляет уведомление о запросе авторизации с кнопками подтверждения
      */
+    @Retryable(
+        value = [TelegramApiException::class],
+        maxAttempts = 3,
+        backoff = Backoff(delay = 1000, multiplier = 2.0)
+    )
     fun sendAuthConfirmationRequest(
         telegramBot: TelegramLongPollingBot,
         telegramUserId: Long,
@@ -116,9 +140,23 @@ class TelegramNotificationService() {
             return result.messageId.toLong()
             
         } catch (e: TelegramApiException) {
-            logger.error("Ошибка отправки сообщения подтверждения авторизации: ${e.message}", e)
-            return null
+            logger.warn("Попытка отправки сообщения подтверждения авторизации не удалась: ${e.message}")
+            throw e // Пробрасываем для retry
         }
+    }
+    
+    @Recover
+    fun recoverSendAuthConfirmationRequest(
+        e: TelegramApiException,
+        telegramBot: TelegramLongPollingBot,
+        telegramUserId: Long,
+        traceId: UUID,
+        ip: String?,
+        userAgent: String?,
+        location: String?
+    ): Long? {
+        logger.error("Все попытки отправки сообщения подтверждения авторизации исчерпаны: traceId=$traceId", e)
+        return null
     }
 
     /**
