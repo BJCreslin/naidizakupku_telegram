@@ -45,7 +45,16 @@ dependencies {
     implementation("javax.xml.bind:jaxb-api:2.3.1")
     implementation("org.glassfish.jaxb:jaxb-runtime:4.0.4")
     
+    // Rate limiting
+    implementation("com.bucket4j:bucket4j-core:8.10.1")
+    
     runtimeOnly("org.postgresql:postgresql")
+    
+    // Testing
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    testImplementation("io.mockk:mockk:1.13.8")
     
 }
 

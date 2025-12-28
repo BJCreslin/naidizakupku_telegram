@@ -106,9 +106,14 @@ data class TraceContextData(
 )
 
 @Component
-class WebConfig : WebMvcConfigurer {
+class WebConfig(
+    private val tracingInterceptor: TracingInterceptor,
+    private val rateLimitInterceptor: RateLimitInterceptor
+) : WebMvcConfigurer {
 
     override fun addInterceptors(registry: InterceptorRegistry) {
-        registry.addInterceptor(TracingInterceptor())
+        // Rate limiting должен быть первым
+        registry.addInterceptor(rateLimitInterceptor)
+        registry.addInterceptor(tracingInterceptor)
     }
 }

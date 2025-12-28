@@ -153,4 +153,16 @@ class KafkaVerificationService(
             logger.error("Ошибка обработки ответа отзыва: ${e.message}", e)
         }
     }
+    
+    /**
+     * Получает статус сессии верификации по correlation ID
+     */
+    fun getVerificationSessionStatus(correlationId: UUID): com.naidizakupku.telegram.domain.entity.VerificationSession? {
+        return try {
+            verificationSessionService.findByCorrelationId(correlationId)
+        } catch (e: Exception) {
+            logger.error("Ошибка получения статуса сессии: correlationId=$correlationId", e)
+            null
+        }
+    }
 }

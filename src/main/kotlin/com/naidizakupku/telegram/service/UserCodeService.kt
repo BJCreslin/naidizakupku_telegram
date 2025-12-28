@@ -23,7 +23,8 @@ class UserCodeService(
     private val codeGenerationService: CodeGenerationService,
     private val telegramNotificationService: TelegramNotificationService,
     private val kafkaProducerService: KafkaProducerService,
-    private val telegramBotExecutor: TelegramBotExecutor
+    private val telegramBotExecutor: TelegramBotExecutor,
+    private val metricsService: MetricsService
 ) {
 
     companion object {
@@ -35,11 +36,17 @@ class UserCodeService(
      * Проверяет существование кода и не просрочен ли он
      */
     fun verifyCode(code: String): Boolean {
+        val startTime = System.currentTimeMillis()
         val now = LocalDateTime.now()
         val existingCode = userCodeRepository.existsByCodeAndNotExpired(code, now)
 
         val existText = if (existingCode) " - код существует и не просрочен" else " - код не найден или просрочен"
         logger.info("Проверка кода: $code. $existText")
+
+        // Метрики
+        metricsService.incrementCodeVerified(existingCode)
+        val duration = System.currentTimeMillis() - startTime
+        metricsService.recordCodeVerificationTime(duration, java.util.concurrent.TimeUnit.MILLISECONDS)
 
         return existingCode
     }
@@ -153,6 +160,8 @@ class UserCodeService(
             if (expiredCodes.isNotEmpty()) {
                 userCodeRepository.deleteExpiredCodes(now)
                 logger.info("Удалено ${expiredCodes.size} просроченных кодов")
+                // Метрики
+                expiredCodes.forEach { metricsService.incrementCodeExpired() }
             }
         } catch (e: Exception) {
             logger.error("Ошибка при очистке просроченных кодов", e)

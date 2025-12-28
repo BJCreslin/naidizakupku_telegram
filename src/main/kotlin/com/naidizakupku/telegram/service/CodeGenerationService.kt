@@ -10,7 +10,8 @@ import java.util.concurrent.ThreadLocalRandom
 
 @Service
 class CodeGenerationService(
-    private val userCodeRepository: UserCodeRepository
+    private val userCodeRepository: UserCodeRepository,
+    private val metricsService: MetricsService
 ) {
     
     companion object {
@@ -40,6 +41,7 @@ class CodeGenerationService(
     }
     
     fun createUserCode(telegramUserId: Long): UserCode {
+        val startTime = System.currentTimeMillis()
         val code = generateUniqueCode()
         val expiresAt = LocalDateTime.now().plusMinutes(codeExpirationMinutes.toLong())
         
@@ -51,6 +53,11 @@ class CodeGenerationService(
         
         val savedCode = userCodeRepository.save(userCode)
         logger.info("Создан код для пользователя $telegramUserId: $code, истекает в $expiresAt")
+        
+        // Метрики
+        metricsService.incrementCodeGenerated()
+        val duration = System.currentTimeMillis() - startTime
+        metricsService.recordCodeGenerationTime(duration, java.util.concurrent.TimeUnit.MILLISECONDS)
         
         return savedCode
     }

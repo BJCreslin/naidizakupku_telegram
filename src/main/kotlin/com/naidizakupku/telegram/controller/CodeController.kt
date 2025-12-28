@@ -167,20 +167,24 @@ class CodeController(
         )
         @PathVariable correlationId: String
     ): ResponseEntity<Map<String, Any>> {
-        try {
-            val uuid = UUID.fromString(correlationId)
-            // TODO: Реализовать получение статуса из сервиса
-            return ResponseEntity.ok(
+        val uuid = UUID.fromString(correlationId)
+        val session = kafkaVerificationService.getVerificationSessionStatus(uuid)
+        
+        return if (session != null) {
+            ResponseEntity.ok(
                 mapOf(
                     "correlationId" to correlationId,
-                    "status" to "PENDING",
-                    "message" to "Status retrieval not implemented yet"
+                    "status" to session.status.name,
+                    "telegramUserId" to session.telegramUserId,
+                    "createdAt" to session.createdAt.toString(),
+                    "updatedAt" to session.updatedAt?.toString()
                 )
             )
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().body(
+        } else {
+            ResponseEntity.status(404).body(
                 mapOf(
-                    "error" to "Invalid correlation ID format"
+                    "correlationId" to correlationId,
+                    "error" to "Session not found"
                 )
             )
         }
