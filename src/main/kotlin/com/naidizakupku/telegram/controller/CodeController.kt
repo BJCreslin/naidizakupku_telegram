@@ -14,6 +14,7 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import org.springframework.lang.Nullable
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.messaging.handler.annotation.Header as SpringHeader
@@ -105,27 +106,27 @@ class CodeController(
         
         return when (result) {
             is UserCodeService.AuthVerificationResult.Success -> {
-                ResponseEntity.ok(mapOf(
+                ResponseEntity.ok(mapOf<String, Any>(
                     "success" to true,
                     "message" to "Код верифицирован, запрос отправлен пользователю"
                 ))
             }
             is UserCodeService.AuthVerificationResult.CodeNotFound -> {
-                ResponseEntity.badRequest().body(mapOf(
+                ResponseEntity.badRequest().body(mapOf<String, Any>(
                     "success" to false,
                     "error" to "Код не найден или просрочен"
                 ))
             }
             is UserCodeService.AuthVerificationResult.CodeExpired -> {
-                ResponseEntity.badRequest().body(mapOf(
+                ResponseEntity.badRequest().body(mapOf<String, Any>(
                     "success" to false,
                     "error" to "Код просрочен"
                 ))
             }
             is UserCodeService.AuthVerificationResult.Error -> {
-                ResponseEntity.status(500).body(mapOf(
+                ResponseEntity.status(500).body(mapOf<String, Any>(
                     "success" to false,
-                    "error" to result.message
+                    "error" to (result.message ?: "Неизвестная ошибка")
                 ))
             }
         }
@@ -167,22 +168,33 @@ class CodeController(
         )
         @PathVariable correlationId: String
     ): ResponseEntity<Map<String, Any>> {
-        val uuid = UUID.fromString(correlationId)
+        val uuid = try {
+            UUID.fromString(correlationId)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Некорректный формат correlationId: $correlationId")
+            return ResponseEntity.badRequest().body(
+                mapOf(
+                    "error" to "Invalid correlation ID format",
+                    "message" to "Correlation ID должен быть в формате UUID (например: 550e8400-e29b-41d4-a716-446655440000)"
+                )
+            )
+        }
+        
         val session = kafkaVerificationService.getVerificationSessionStatus(uuid)
         
         return if (session != null) {
             ResponseEntity.ok(
-                mapOf(
+                mapOf<String, Any>(
                     "correlationId" to correlationId,
                     "status" to session.status.name,
                     "telegramUserId" to session.telegramUserId,
                     "createdAt" to session.createdAt.toString(),
-                    "updatedAt" to session.updatedAt?.toString()
+                    "updatedAt" to (session.updatedAt?.toString() ?: "")
                 )
             )
         } else {
             ResponseEntity.status(404).body(
-                mapOf(
+                mapOf<String, Any>(
                     "correlationId" to correlationId,
                     "error" to "Session not found"
                 )
@@ -208,7 +220,8 @@ class CodeController(
             example = "192.168.1.1",
             required = false
         )
-        @field:Pattern(regexp = "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", message = "Некорректный IP адрес")
+        @Nullable
+        @field:Pattern(regexp = "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$|^$", message = "Некорректный IP адрес")
         val ip: String? = null,
         
         /** User Agent запрашиваемого */
@@ -218,6 +231,7 @@ class CodeController(
             required = false,
             maxLength = 500
         )
+        @Nullable
         @field:Size(max = 500, message = "User-Agent не должен превышать 500 символов")
         val userAgent: String? = null,
         
@@ -228,6 +242,7 @@ class CodeController(
             required = false,
             maxLength = 200
         )
+        @Nullable
         @field:Size(max = 200, message = "Локация не должна превышать 200 символов")
         val location: String? = null
     )

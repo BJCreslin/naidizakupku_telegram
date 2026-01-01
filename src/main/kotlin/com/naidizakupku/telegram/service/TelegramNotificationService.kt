@@ -2,11 +2,9 @@ package com.naidizakupku.telegram.service
 
 import com.naidizakupku.telegram.domain.dto.UserBrowserInfoDto
 import com.naidizakupku.telegram.domain.entity.VerificationSession
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.retry.annotation.Backoff
-import org.springframework.retry.annotation.Recover
-import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
@@ -27,11 +25,7 @@ class TelegramNotificationService() {
     private val moscowZone = ZoneId.of("Europe/Moscow")
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     
-    @Retryable(
-        value = [TelegramApiException::class],
-        maxAttempts = 3,
-        backoff = Backoff(delay = 1000, multiplier = 2.0)
-    )
+    @CircuitBreaker(name = "telegramApi", fallbackMethod = "sendVerificationRequestFallback")
     fun sendVerificationRequest(
         telegramBot: TelegramBotExecutor,
         session: VerificationSession,
@@ -49,14 +43,13 @@ class TelegramNotificationService() {
         )
     }
     
-    @Recover
-    fun recoverSendVerificationRequest(
-        e: TelegramApiException,
+    fun sendVerificationRequestFallback(
+        e: Exception,
         telegramBot: TelegramBotExecutor,
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
-        logger.error("Все попытки отправки сообщения верификации исчерпаны: correlationId=${session.correlationId}", e)
+        logger.error("Circuit Breaker открыт для Telegram API при отправке верификации: correlationId=${session.correlationId}", e)
         return null
     }
     
@@ -90,11 +83,7 @@ class TelegramNotificationService() {
     /**
      * Отправляет уведомление о запросе авторизации с кнопками подтверждения
      */
-    @Retryable(
-        value = [TelegramApiException::class],
-        maxAttempts = 3,
-        backoff = Backoff(delay = 1000, multiplier = 2.0)
-    )
+    @CircuitBreaker(name = "telegramApi", fallbackMethod = "sendAuthConfirmationRequestFallback")
     fun sendAuthConfirmationRequest(
         telegramBot: TelegramBotExecutor,
         telegramUserId: Long,
@@ -115,9 +104,8 @@ class TelegramNotificationService() {
         )
     }
     
-    @Recover
-    fun recoverSendAuthConfirmationRequest(
-        e: TelegramApiException,
+    fun sendAuthConfirmationRequestFallback(
+        e: Exception,
         telegramBot: TelegramBotExecutor,
         telegramUserId: Long,
         traceId: UUID,
@@ -125,13 +113,14 @@ class TelegramNotificationService() {
         userAgent: String?,
         location: String?
     ): Long? {
-        logger.error("Все попытки отправки сообщения подтверждения авторизации исчерпаны: traceId=$traceId", e)
+        logger.error("Circuit Breaker открыт для Telegram API при отправке подтверждения авторизации: traceId=$traceId", e)
         return null
     }
 
     /**
      * Удаляет кнопки из сообщения подтверждения авторизации
      */
+    @CircuitBreaker(name = "telegramApi", fallbackMethod = "removeAuthConfirmationButtonsFallback")
     fun removeAuthConfirmationButtons(telegramBot: TelegramBotExecutor, telegramUserId: Long, traceId: UUID): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
@@ -141,10 +130,21 @@ class TelegramNotificationService() {
             errorMessage = "Ошибка удаления кнопок подтверждения"
         )
     }
+    
+    fun removeAuthConfirmationButtonsFallback(
+        e: Exception,
+        telegramBot: TelegramBotExecutor,
+        telegramUserId: Long,
+        traceId: UUID
+    ): Boolean {
+        logger.error("Circuit Breaker открыт для Telegram API при удалении кнопок: traceId=$traceId", e)
+        return false
+    }
 
     /**
      * Отправляет сообщение об отзыве авторизации
      */
+    @CircuitBreaker(name = "telegramApi", fallbackMethod = "sendAuthRevokedMessageFallback")
     fun sendAuthRevokedMessage(telegramBot: TelegramBotExecutor, telegramUserId: Long): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
@@ -153,6 +153,15 @@ class TelegramNotificationService() {
             logMessage = "Сообщение об отзыве авторизации отправлено: telegramUserId=$telegramUserId",
             errorMessage = "Ошибка отправки сообщения об отзыве авторизации"
         )
+    }
+    
+    fun sendAuthRevokedMessageFallback(
+        e: Exception,
+        telegramBot: TelegramBotExecutor,
+        telegramUserId: Long
+    ): Boolean {
+        logger.error("Circuit Breaker открыт для Telegram API при отправке сообщения об отзыве: telegramUserId=$telegramUserId", e)
+        return false
     }
     
     private fun buildVerificationMessage(

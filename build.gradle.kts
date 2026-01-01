@@ -48,6 +48,10 @@ dependencies {
     // Rate limiting
     implementation("com.bucket4j:bucket4j-core:8.10.1")
     
+    // Circuit Breaker (Resilience4j)
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.1.0")
+    implementation("io.github.resilience4j:resilience4j-kotlin:2.1.0")
+    
     runtimeOnly("org.postgresql:postgresql")
     
     // Testing

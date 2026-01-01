@@ -1,6 +1,7 @@
 package com.naidizakupku.telegram.service
 
 import com.naidizakupku.telegram.domain.dto.*
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.kafka.core.KafkaTemplate
@@ -23,11 +24,11 @@ class KafkaProducerService(
     @Value("\${kafka.topics.revoke-request:authorization-revoke-request}")
     private lateinit var revokeRequestTopic: String
     
+    @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "sendVerificationResponseFallback")
     fun sendVerificationResponse(response: CodeVerificationResponseDto): CompletableFuture<SendResult<String, Any>> {
         logger.info("Отправка ответа верификации: correlationId=${response.correlationId}, success=${response.success}")
         
         return kafkaTemplate.send(verificationResponseTopic, response.correlationId.toString(), response)
-//            .completable()
             .whenComplete { result, throwable ->
                 if (throwable != null) {
                     logger.error("Ошибка отправки ответа верификации: ${throwable.message}", throwable)
@@ -37,11 +38,19 @@ class KafkaProducerService(
             }
     }
     
+    fun sendVerificationResponseFallback(
+        e: Exception,
+        response: CodeVerificationResponseDto
+    ): CompletableFuture<SendResult<String, Any>> {
+        logger.error("Circuit Breaker открыт для Kafka Producer при отправке ответа верификации: correlationId=${response.correlationId}", e)
+        return CompletableFuture.failedFuture(e)
+    }
+    
+    @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "sendRevokeRequestFallback")
     fun sendRevokeRequest(request: AuthorizationRevokeRequestDto): CompletableFuture<SendResult<String, Any>> {
         logger.info("Отправка запроса отзыва авторизации: correlationId=${request.correlationId}")
         
         return kafkaTemplate.send(revokeRequestTopic, request.correlationId.toString(), request)
-//            .completable()
             .whenComplete { result, throwable ->
                 if (throwable != null) {
                     logger.error("Ошибка отправки запроса отзыва: ${throwable.message}", throwable)
@@ -49,6 +58,14 @@ class KafkaProducerService(
                     logger.info("Запрос отзыва отправлен успешно: ${result?.producerRecord?.key()}")
                 }
             }
+    }
+    
+    fun sendRevokeRequestFallback(
+        e: Exception,
+        request: AuthorizationRevokeRequestDto
+    ): CompletableFuture<SendResult<String, Any>> {
+        logger.error("Circuit Breaker открыт для Kafka Producer при отправке запроса отзыва: correlationId=${request.correlationId}", e)
+        return CompletableFuture.failedFuture(e)
     }
     
     fun sendVerificationResponse(

@@ -81,7 +81,7 @@ class UserCodeService(
                     authRequestRepository.save(authRequest)
                     
                     // Отправляем уведомление в Telegram с кнопками подтверждения
-                    telegramNotificationService.sendAuthConfirmationRequest(
+                    val messageId = telegramNotificationService.sendAuthConfirmationRequest(
                         telegramBot = telegramBotExecutor,
                         telegramUserId = existingCode.telegramUserId,
                         traceId = traceId,
@@ -89,7 +89,12 @@ class UserCodeService(
                         userAgent = request.userAgent,
                         location = request.location
                     )
-                    logger.info("Отправлено уведомление о входе пользователю ${existingCode.telegramUserId} для traceId $traceId")
+                    
+                    if (messageId != null) {
+                        logger.info("Отправлено уведомление о входе пользователю ${existingCode.telegramUserId} для traceId $traceId, messageId=$messageId")
+                    } else {
+                        logger.warn("Не удалось отправить уведомление о входе пользователю ${existingCode.telegramUserId} для traceId $traceId (Circuit Breaker открыт)")
+                    }
                     
                     // Удаляем использованный код и инвалидируем кэш
                     userCodeRepository.deleteByCode(code)
