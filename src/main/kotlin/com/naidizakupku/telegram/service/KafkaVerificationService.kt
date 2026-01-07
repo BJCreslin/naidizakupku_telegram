@@ -3,6 +3,7 @@ package com.naidizakupku.telegram.service
 import com.naidizakupku.telegram.domain.dto.*
 import com.naidizakupku.telegram.domain.entity.VerificationStatus
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
@@ -12,7 +13,7 @@ class KafkaVerificationService(
     private val verificationSessionService: VerificationSessionService,
     private val telegramNotificationService: TelegramNotificationService,
     private val kafkaProducerService: KafkaProducerService,
-    private val telegramBotExecutor: TelegramBotExecutor
+    @Lazy private val telegramBotExecutor: TelegramBotExecutor
 ) {
     
     private val logger = LoggerFactory.getLogger(KafkaVerificationService::class.java)
