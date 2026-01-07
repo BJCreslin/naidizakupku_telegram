@@ -76,6 +76,22 @@ class TelegramBotService(
 
                 // Обработка команд
                 when {
+                    text.startsWith("/help") || text.startsWith("/start") -> {
+                        val helpMessage = """
+                            🤖 <b>Доступные команды:</b>
+                            
+                            /code - Получить код для входа в систему
+                            /help - Показать эту справку
+                            
+                            <i>Для получения кода используйте команду /code</i>
+                        """.trimIndent()
+                        val message = SendMessage()
+                        message.chatId = chatId.toString()
+                        message.text = helpMessage
+                        message.parseMode = "HTML"
+                        execute(message)
+                        logger.info("Отправлена справка пользователю $userId")
+                    }
                     text.startsWith("/code") -> {
                         val responseMessage = telegramCodeHandler.handleCodeCommand(update)
                         execute(responseMessage)
