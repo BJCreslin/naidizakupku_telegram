@@ -7,6 +7,7 @@ import { StatusBadge } from '../../components/common/StatusBadge'
 import { useCodes, useDeleteCode } from '../../hooks/useCodes'
 import { Code } from '../../types/code'
 import { formatDateTime } from '../../utils/formatters'
+import { showSuccess, showError } from '../../utils/notifications'
 
 export const CodesList = () => {
   const [page, setPage] = useState(0)
@@ -31,7 +32,12 @@ export const CodesList = () => {
   }, [])
 
   const handleDelete = useCallback(async (id: number) => {
-    await deleteCode.mutateAsync(id)
+    try {
+      await deleteCode.mutateAsync(id)
+      showSuccess({ title: 'Код удален' })
+    } catch (error) {
+      showError({ title: 'Ошибка', message: 'Не удалось удалить код' })
+    }
   }, [deleteCode])
 
   const handleUserIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,10 +105,11 @@ export const CodesList = () => {
       render: (_: any, record: Code) => (
         <Popconfirm
           title="Удалить код?"
-          description="Это действие нельзя отменить"
+          description="Это действие нельзя отменить. Код будет безвозвратно удален из системы."
           onConfirm={() => handleDelete(record.id)}
-          okText="Да"
-          cancelText="Нет"
+          okText="Да, удалить"
+          cancelText="Отмена"
+          okButtonProps={{ danger: true }}
         >
           <Button 
             type="link" 

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Card, Space, Select, Button } from 'antd'
+import { Card, Space, Select, Button, Popconfirm } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { DataTable } from '../../components/common/DataTable'
@@ -9,6 +9,7 @@ import { StatusBadge } from '../../components/common/StatusBadge'
 import { useUsers, useActivateUser, useDeactivateUser } from '../../hooks/useUsers'
 import { User } from '../../types/user'
 import { formatDateTime } from '../../utils/formatters'
+import { showSuccess, showError } from '../../utils/notifications'
 
 export const UsersList = () => {
   const [page, setPage] = useState(0)
@@ -38,11 +39,21 @@ export const UsersList = () => {
   }, [])
 
   const handleActivate = useCallback(async (id: number) => {
-    await activateUser.mutateAsync(id)
+    try {
+      await activateUser.mutateAsync(id)
+      showSuccess({ title: 'Пользователь активирован' })
+    } catch (error) {
+      showError({ title: 'Ошибка', message: 'Не удалось активировать пользователя' })
+    }
   }, [activateUser])
 
   const handleDeactivate = useCallback(async (id: number) => {
-    await deactivateUser.mutateAsync(id)
+    try {
+      await deactivateUser.mutateAsync(id)
+      showSuccess({ title: 'Пользователь деактивирован' })
+    } catch (error) {
+      showError({ title: 'Ошибка', message: 'Не удалось деактивировать пользователя' })
+    }
   }, [deactivateUser])
 
   const handleActiveChange = useCallback((value: boolean | undefined) => {
@@ -100,14 +111,22 @@ export const UsersList = () => {
             Детали
           </Button>
           {record.active ? (
-            <Button 
-              type="link" 
-              danger 
-              onClick={() => handleDeactivate(record.id)}
-              loading={deactivateUser.isPending}
+            <Popconfirm
+              title="Деактивировать пользователя?"
+              description="Пользователь не сможет использовать систему после деактивации."
+              onConfirm={() => handleDeactivate(record.id)}
+              okText="Да"
+              cancelText="Нет"
+              okButtonProps={{ danger: true }}
             >
-              Деактивировать
-            </Button>
+              <Button 
+                type="link" 
+                danger 
+                loading={deactivateUser.isPending}
+              >
+                Деактивировать
+              </Button>
+            </Popconfirm>
           ) : (
             <Button 
               type="link" 

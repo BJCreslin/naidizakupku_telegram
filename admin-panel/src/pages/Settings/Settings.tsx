@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Card, Form, InputNumber, Button, message, Spin } from 'antd'
+import { Card, Form, InputNumber, Button, Spin } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'
+import { showSuccess, showError } from '../../utils/notifications'
 
 export const Settings = () => {
   const [form] = Form.useForm()
@@ -16,10 +17,10 @@ export const Settings = () => {
     mutationFn: (values: Record<string, any>) => settingsApi.updateSettings(values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] })
-      message.success('Настройки обновлены')
+      showSuccess({ title: 'Настройки обновлены' })
     },
     onError: () => {
-      message.error('Ошибка при обновлении настроек')
+      showError({ title: 'Ошибка', message: 'Не удалось обновить настройки' })
     },
   })
 

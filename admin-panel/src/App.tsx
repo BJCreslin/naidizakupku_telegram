@@ -1,9 +1,10 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Spin } from 'antd'
+import { Spin, App as AntApp } from 'antd'
 import { Layout } from './components/layout/Layout'
 import { Login } from './pages/Auth/Login'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 // Lazy loading для страниц
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })))
@@ -24,19 +25,21 @@ const PageLoader = () => (
   </div>
 )
 
-function App() {
+export function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
+    <ErrorBoundary>
+      <AntApp>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route 
             path="dashboard" 
@@ -118,10 +121,12 @@ function App() {
               </Suspense>
             } 
           />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AntApp>
+    </ErrorBoundary>
   )
 }
 

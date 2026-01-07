@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Form, Input, Button, Card, message, Typography } from 'antd'
+import { Form, Input, Button, Card, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { authApi } from '../../api/auth'
+import { showSuccess, showError } from '../../utils/notifications'
 
 const { Title } = Typography
 
@@ -17,10 +18,13 @@ export const Login = () => {
     try {
       const response = await authApi.login(values)
       setAuth(response.accessToken, response.refreshToken, response.user)
-      message.success('Успешный вход!')
+      showSuccess({ title: 'Успешный вход!', message: 'Добро пожаловать в админ-панель' })
       navigate('/dashboard')
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Ошибка входа. Проверьте учетные данные.')
+      showError({ 
+        title: 'Ошибка входа', 
+        message: error.response?.data?.message || 'Проверьте учетные данные' 
+      })
     } finally {
       setLoading(false)
     }

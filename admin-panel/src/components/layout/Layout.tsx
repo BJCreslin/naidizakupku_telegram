@@ -15,7 +15,7 @@ export const Layout = () => {
       <Sidebar />
       <AntLayout style={{ marginLeft: sidebarWidth }}>
         <Header />
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
+        <Content style={{ margin: '24px 16px', padding: 24, minHeight: 280 }}>
           <Outlet />
         </Content>
       </AntLayout>
