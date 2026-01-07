@@ -1,4 +1,4 @@
-import { Layout, Dropdown, Avatar, Button, Popconfirm } from 'antd'
+import { Layout, Dropdown, Avatar, Button } from 'antd'
 import { UserOutlined, LogoutOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { useUIStore } from '../../store/uiStore'

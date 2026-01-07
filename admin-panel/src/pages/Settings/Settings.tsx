@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Card, Form, InputNumber, Button, Spin } from 'antd'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { settingsApi } from '../../api/settings'

@@ -19,9 +19,9 @@ export const Dashboard = () => {
   }
 
   // Подготовка данных для графика (пример)
-  const chartData = [
-    { name: 'Коды', generated: metrics.codes.generated, verified: metrics.codes.verified },
-    { name: 'Верификация', requests: metrics.verification.requests, confirmed: metrics.verification.confirmed },
+  const chartData: Array<{ [key: string]: string | number; name: string }> = [
+    { name: 'Коды', generated: metrics.codes.generated, verified: metrics.codes.verified, requests: 0, confirmed: 0 },
+    { name: 'Верификация', requests: metrics.verification.requests, confirmed: metrics.verification.confirmed, generated: 0, verified: 0 },
   ]
 
   return (

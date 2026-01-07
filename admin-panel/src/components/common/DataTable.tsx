@@ -33,7 +33,7 @@ function DataTableComponent<T extends { id?: number | string }>({
     showTotal: (total: number, range: [number, number]) => `${range[0]}-${range[1]} из ${total}`,
     onChange: handlePageChange,
     onShowSizeChange: handlePageChange,
-    pageSizeOptions: ['10', '20', '50', '100'] as const,
+    pageSizeOptions: ['10', '20', '50', '100'],
   }), [data.page, data.size, data.totalElements, handlePageChange])
 
   // Включаем виртуализацию если включена опция и данных больше 50

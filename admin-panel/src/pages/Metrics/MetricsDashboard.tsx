@@ -7,7 +7,6 @@ import {
   DatabaseOutlined 
 } from '@ant-design/icons'
 import { useCodeMetrics, useVerificationMetrics, useTelegramMetrics, useKafkaMetrics } from '../../hooks/useMetrics'
-import { MetricsChart } from '../../components/charts/MetricsChart'
 import { BarChart } from '../../components/charts/BarChart'
 
 export const MetricsDashboard = () => {
@@ -28,18 +27,24 @@ export const MetricsDashboard = () => {
     )
   }
 
-  const chartData = [
+  const chartData: Array<{ [key: string]: string | number; name: string }> = [
     { 
       name: 'Коды', 
       generated: codeMetrics?.generated || 0, 
       verified: codeMetrics?.verified || 0,
       failed: codeMetrics?.verificationFailed || 0,
+      requests: 0,
+      confirmed: 0,
+      revoked: 0,
     },
     { 
       name: 'Верификация', 
       requests: verificationMetrics?.requests || 0, 
       confirmed: verificationMetrics?.confirmed || 0,
       revoked: verificationMetrics?.revoked || 0,
+      generated: 0,
+      verified: 0,
+      failed: 0,
     },
   ]
 

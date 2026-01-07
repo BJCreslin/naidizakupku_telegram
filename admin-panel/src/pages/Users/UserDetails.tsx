@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Descriptions, Button, Space, Spin, message } from 'antd'
+import { Card, Descriptions, Button, Space, Spin } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useUser, useActivateUser, useDeactivateUser } from '../../hooks/useUsers'
 import { StatusBadge } from '../../components/common/StatusBadge'

@@ -1,10 +1,10 @@
 import { Card, Table, Tag, Space, Button, Spin } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { kafkaApi, KafkaStatus, TopicInfo, ConsumerGroupInfo } from '../../api/kafka'
+import { kafkaApi, KafkaStatus as KafkaStatusType } from '../../api/kafka'
 
 export const KafkaStatus = () => {
-  const { data: status, isLoading, refetch } = useQuery<KafkaStatus>({
+  const { data: status, isLoading, refetch } = useQuery<KafkaStatusType>({
     queryKey: ['kafka', 'status'],
     queryFn: () => kafkaApi.getStatus(),
     refetchInterval: 30000, // Обновление каждые 30 секунд

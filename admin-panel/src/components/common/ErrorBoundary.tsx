@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
               />,
             ]}
           >
-            {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+            {import.meta.env.DEV && this.state.errorInfo && (
               <div style={{ 
                 marginTop: 20, 
                 padding: 16, 
