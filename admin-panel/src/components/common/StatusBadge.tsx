@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { Tag } from 'antd'
 import { ReactNode } from 'react'
 
@@ -19,11 +20,14 @@ const statusColors: Record<string, string> = {
   DEBUG: 'default',
 }
 
-export const StatusBadge = ({ status, children }: StatusBadgeProps) => {
-  const color = statusColors[status.toUpperCase()] || 'default'
+export const StatusBadge = memo(({ status, children }: StatusBadgeProps) => {
+  const color = useMemo(() => statusColors[status.toUpperCase()] || 'default', [status])
+  
   return (
     <Tag color={color}>
       {children || status}
     </Tag>
   )
-}
+})
+
+StatusBadge.displayName = 'StatusBadge'

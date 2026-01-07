@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Card, Space, Button } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { ReactNode } from 'react'
@@ -8,7 +9,7 @@ interface FilterPanelProps {
   title?: string
 }
 
-export const FilterPanel = ({ children, onReset, title = 'Фильтры' }: FilterPanelProps) => {
+export const FilterPanel = memo(({ children, onReset, title = 'Фильтры' }: FilterPanelProps) => {
   return (
     <Card
       title={title}
@@ -25,5 +26,7 @@ export const FilterPanel = ({ children, onReset, title = 'Фильтры' }: Fil
       <Space wrap>{children}</Space>
     </Card>
   )
-}
+})
+
+FilterPanel.displayName = 'FilterPanel'
 

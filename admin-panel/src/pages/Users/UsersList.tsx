@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Card, Space, Select, Button, message } from 'antd'
+import { useState, useMemo, useCallback } from 'react'
+import { Card, Space, Select, Button } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { DataTable } from '../../components/common/DataTable'
@@ -21,31 +21,36 @@ export const UsersList = () => {
   const activateUser = useActivateUser()
   const deactivateUser = useDeactivateUser()
 
-  const handlePageChange = (newPage: number, newSize: number) => {
+  const handlePageChange = useCallback((newPage: number, newSize: number) => {
     setPage(newPage)
     setSize(newSize)
-  }
+  }, [])
 
-  const handleSearch = (value: string) => {
+  const handleSearch = useCallback((value: string) => {
     setSearch(value || undefined)
     setPage(0)
-  }
+  }, [])
 
-  const handleFilterReset = () => {
+  const handleFilterReset = useCallback(() => {
     setSearch(undefined)
     setActive(undefined)
     setPage(0)
-  }
+  }, [])
 
-  const handleActivate = async (id: number) => {
+  const handleActivate = useCallback(async (id: number) => {
     await activateUser.mutateAsync(id)
-  }
+  }, [activateUser])
 
-  const handleDeactivate = async (id: number) => {
+  const handleDeactivate = useCallback(async (id: number) => {
     await deactivateUser.mutateAsync(id)
-  }
+  }, [deactivateUser])
 
-  const columns = [
+  const handleActiveChange = useCallback((value: boolean | undefined) => {
+    setActive(value)
+    setPage(0)
+  }, [])
+
+  const columns = useMemo(() => [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -115,7 +120,7 @@ export const UsersList = () => {
         </Space>
       ),
     },
-  ]
+  ], [navigate, handleActivate, handleDeactivate, activateUser.isPending, deactivateUser.isPending])
 
   return (
     <div>
@@ -134,10 +139,7 @@ export const UsersList = () => {
           allowClear
           style={{ width: 150 }}
           value={active}
-          onChange={(value) => {
-            setActive(value)
-            setPage(0)
-          }}
+          onChange={handleActiveChange}
         >
           <Select.Option value={true}>Активные</Select.Option>
           <Select.Option value={false}>Неактивные</Select.Option>
@@ -154,6 +156,8 @@ export const UsersList = () => {
             columns={columns}
             loading={isLoading}
             onPageChange={handlePageChange}
+            virtualized={true}
+            virtualizedHeight={600}
           />
         )}
       </Card>

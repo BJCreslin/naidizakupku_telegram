@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Card, Space, Select, Button, Input } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -18,18 +18,29 @@ export const VerificationSessionsList = () => {
   
   const { data, isLoading, refetch } = useVerificationSessions(page, size, status, userId)
 
-  const handlePageChange = (newPage: number, newSize: number) => {
+  const handlePageChange = useCallback((newPage: number, newSize: number) => {
     setPage(newPage)
     setSize(newSize)
-  }
+  }, [])
 
-  const handleFilterReset = () => {
+  const handleFilterReset = useCallback(() => {
     setStatus(undefined)
     setUserId(undefined)
     setPage(0)
-  }
+  }, [])
 
-  const columns = [
+  const handleUserIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value ? parseInt(e.target.value) : undefined
+    setUserId(value)
+    setPage(0)
+  }, [])
+
+  const handleStatusChange = useCallback((value: string | undefined) => {
+    setStatus(value)
+    setPage(0)
+  }, [])
+
+  const columns = useMemo(() => [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -92,7 +103,7 @@ export const VerificationSessionsList = () => {
         </Button>
       ),
     },
-  ]
+  ], [navigate])
 
   return (
     <div>
@@ -103,11 +114,7 @@ export const VerificationSessionsList = () => {
           type="number"
           placeholder="Telegram User ID"
           value={userId}
-          onChange={(e) => {
-            const value = e.target.value ? parseInt(e.target.value) : undefined
-            setUserId(value)
-            setPage(0)
-          }}
+          onChange={handleUserIdChange}
           style={{ width: 200 }}
         />
         <Select
@@ -115,10 +122,7 @@ export const VerificationSessionsList = () => {
           allowClear
           style={{ width: 150 }}
           value={status}
-          onChange={(value) => {
-            setStatus(value)
-            setPage(0)
-          }}
+          onChange={handleStatusChange}
         >
           <Select.Option value="PENDING">PENDING</Select.Option>
           <Select.Option value="CONFIRMED">CONFIRMED</Select.Option>
@@ -136,6 +140,8 @@ export const VerificationSessionsList = () => {
             columns={columns}
             loading={isLoading}
             onPageChange={handlePageChange}
+            virtualized={true}
+            virtualizedHeight={600}
           />
         )}
       </Card>

@@ -22,6 +22,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Разделение vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          'query-vendor': ['@tanstack/react-query'],
+          'utils-vendor': ['axios', 'zustand', 'dayjs'],
+          'charts-vendor': ['recharts'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
   },
 })
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Card, Space, Input, Button } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -7,7 +7,7 @@ import { FilterPanel } from '../../components/common/FilterPanel'
 import { authRequestsApi } from '../../api/authRequests'
 import { useQuery } from '@tanstack/react-query'
 import { AuthRequest } from '../../api/authRequests'
-import { PagedResponse } from '../types/api'
+import { PagedResponse } from '../../types/api'
 import { formatDateTime } from '../../utils/formatters'
 
 export const AuthRequestsList = () => {
@@ -22,18 +22,29 @@ export const AuthRequestsList = () => {
     queryFn: () => authRequestsApi.getAuthRequests(page, size, userId, traceId),
   })
 
-  const handlePageChange = (newPage: number, newSize: number) => {
+  const handlePageChange = useCallback((newPage: number, newSize: number) => {
     setPage(newPage)
     setSize(newSize)
-  }
+  }, [])
 
-  const handleFilterReset = () => {
+  const handleFilterReset = useCallback(() => {
     setUserId(undefined)
     setTraceId(undefined)
     setPage(0)
-  }
+  }, [])
 
-  const columns = [
+  const handleUserIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value ? parseInt(e.target.value) : undefined
+    setUserId(value)
+    setPage(0)
+  }, [])
+
+  const handleTraceIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setTraceId(e.target.value || undefined)
+    setPage(0)
+  }, [])
+
+  const columns = useMemo(() => [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -82,7 +93,7 @@ export const AuthRequestsList = () => {
         </Button>
       ),
     },
-  ]
+  ], [navigate])
 
   return (
     <div>
@@ -93,20 +104,13 @@ export const AuthRequestsList = () => {
           type="number"
           placeholder="Telegram User ID"
           value={userId}
-          onChange={(e) => {
-            const value = e.target.value ? parseInt(e.target.value) : undefined
-            setUserId(value)
-            setPage(0)
-          }}
+          onChange={handleUserIdChange}
           style={{ width: 200 }}
         />
         <Input
           placeholder="Trace ID (UUID)"
           value={traceId}
-          onChange={(e) => {
-            setTraceId(e.target.value || undefined)
-            setPage(0)
-          }}
+          onChange={handleTraceIdChange}
           style={{ width: 350 }}
         />
         <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
@@ -121,6 +125,8 @@ export const AuthRequestsList = () => {
             columns={columns}
             loading={isLoading}
             onPageChange={handlePageChange}
+            virtualized={true}
+            virtualizedHeight={600}
           />
         )}
       </Card>

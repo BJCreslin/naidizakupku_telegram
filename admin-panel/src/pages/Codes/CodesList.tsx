@@ -1,8 +1,7 @@
-import { useState } from 'react'
-import { Card, Space, Select, Button, Input, Popconfirm, message } from 'antd'
+import { useState, useMemo, useCallback } from 'react'
+import { Card, Space, Select, Button, Input, Popconfirm } from 'antd'
 import { ReloadOutlined, DeleteOutlined } from '@ant-design/icons'
 import { DataTable } from '../../components/common/DataTable'
-import { SearchBar } from '../../components/common/SearchBar'
 import { FilterPanel } from '../../components/common/FilterPanel'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { useCodes, useDeleteCode } from '../../hooks/useCodes'
@@ -19,23 +18,39 @@ export const CodesList = () => {
   const { data, isLoading, refetch } = useCodes(page, size, userId, active, expired)
   const deleteCode = useDeleteCode()
 
-  const handlePageChange = (newPage: number, newSize: number) => {
+  const handlePageChange = useCallback((newPage: number, newSize: number) => {
     setPage(newPage)
     setSize(newSize)
-  }
+  }, [])
 
-  const handleFilterReset = () => {
+  const handleFilterReset = useCallback(() => {
     setUserId(undefined)
     setActive(undefined)
     setExpired(undefined)
     setPage(0)
-  }
+  }, [])
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     await deleteCode.mutateAsync(id)
-  }
+  }, [deleteCode])
 
-  const columns = [
+  const handleUserIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value ? parseInt(e.target.value) : undefined
+    setUserId(value)
+    setPage(0)
+  }, [])
+
+  const handleActiveChange = useCallback((value: string | undefined) => {
+    setActive(value === 'active' ? true : value === 'inactive' ? false : undefined)
+    setPage(0)
+  }, [])
+
+  const handleExpiredChange = useCallback((value: boolean | undefined) => {
+    setExpired(value)
+    setPage(0)
+  }, [])
+
+  const columns = useMemo(() => [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -100,7 +115,7 @@ export const CodesList = () => {
         </Popconfirm>
       ),
     },
-  ]
+  ], [handleDelete, deleteCode.isPending])
 
   return (
     <div>
@@ -111,11 +126,7 @@ export const CodesList = () => {
           type="number"
           placeholder="Telegram User ID"
           value={userId}
-          onChange={(e) => {
-            const value = e.target.value ? parseInt(e.target.value) : undefined
-            setUserId(value)
-            setPage(0)
-          }}
+          onChange={handleUserIdChange}
           style={{ width: 200 }}
         />
         <Select
@@ -123,10 +134,7 @@ export const CodesList = () => {
           allowClear
           style={{ width: 150 }}
           value={active !== undefined ? (active ? 'active' : 'inactive') : undefined}
-          onChange={(value) => {
-            setActive(value === 'active' ? true : value === 'inactive' ? false : undefined)
-            setPage(0)
-          }}
+          onChange={handleActiveChange}
         >
           <Select.Option value="active">Активные</Select.Option>
           <Select.Option value="inactive">Неактивные</Select.Option>
@@ -136,10 +144,7 @@ export const CodesList = () => {
           allowClear
           style={{ width: 150 }}
           value={expired}
-          onChange={(value) => {
-            setExpired(value)
-            setPage(0)
-          }}
+          onChange={handleExpiredChange}
         >
           <Select.Option value={true}>Да</Select.Option>
           <Select.Option value={false}>Нет</Select.Option>
@@ -156,6 +161,8 @@ export const CodesList = () => {
             columns={columns}
             loading={isLoading}
             onPageChange={handlePageChange}
+            virtualized={true}
+            virtualizedHeight={600}
           />
         )}
       </Card>
