@@ -46,7 +46,7 @@ dependencies {
     implementation("org.glassfish.jaxb:jaxb-runtime:4.0.4")
     
     // Rate limiting
-    implementation("com.bucket4j:bucket4j-core:8.10.1")
+    implementation("io.github.bucket4j:bucket4j-core:8.10.1")
     
     // Circuit Breaker (Resilience4j)
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.1.0")
@@ -63,9 +63,9 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xjsr305=strict"
-        jvmTarget = "21"
+    compilerOptions {
+        freeCompilerArgs.add("-Xjsr305=strict")
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 

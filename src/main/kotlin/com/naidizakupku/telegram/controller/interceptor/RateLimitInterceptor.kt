@@ -1,6 +1,6 @@
 package com.naidizakupku.telegram.controller.interceptor
 
-import com.bucket4j.Bucket
+import io.github.bucket4j.Bucket
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
