@@ -1,5 +1,162 @@
-// Placeholder for UsersList page
-export const UsersList = () => {
-  return <div>UsersList page - to be implemented</div>
-}
+import { useState } from 'react'
+import { Card, Space, Select, Button, message } from 'antd'
+import { ReloadOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { DataTable } from '../../components/common/DataTable'
+import { SearchBar } from '../../components/common/SearchBar'
+import { FilterPanel } from '../../components/common/FilterPanel'
+import { StatusBadge } from '../../components/common/StatusBadge'
+import { useUsers, useActivateUser, useDeactivateUser } from '../../hooks/useUsers'
+import { User } from '../../types/user'
+import { formatDateTime } from '../../utils/formatters'
 
+export const UsersList = () => {
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(20)
+  const [search, setSearch] = useState<string>()
+  const [active, setActive] = useState<boolean | undefined>()
+  const navigate = useNavigate()
+  
+  const { data, isLoading, refetch } = useUsers(page, size, search, active)
+  const activateUser = useActivateUser()
+  const deactivateUser = useDeactivateUser()
+
+  const handlePageChange = (newPage: number, newSize: number) => {
+    setPage(newPage)
+    setSize(newSize)
+  }
+
+  const handleSearch = (value: string) => {
+    setSearch(value || undefined)
+    setPage(0)
+  }
+
+  const handleFilterReset = () => {
+    setSearch(undefined)
+    setActive(undefined)
+    setPage(0)
+  }
+
+  const handleActivate = async (id: number) => {
+    await activateUser.mutateAsync(id)
+  }
+
+  const handleDeactivate = async (id: number) => {
+    await deactivateUser.mutateAsync(id)
+  }
+
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+    },
+    {
+      title: 'Telegram ID',
+      dataIndex: 'telegramId',
+      key: 'telegramId',
+      width: 120,
+    },
+    {
+      title: 'Username',
+      dataIndex: 'username',
+      key: 'username',
+    },
+    {
+      title: 'Имя',
+      key: 'name',
+      render: (_: any, record: User) => 
+        `${record.firstName || ''} ${record.lastName || ''}`.trim() || '-',
+    },
+    {
+      title: 'Статус',
+      dataIndex: 'active',
+      key: 'active',
+      width: 100,
+      render: (active: boolean) => (
+        <StatusBadge status={active ? 'ACTIVE' : 'INACTIVE'} />
+      ),
+    },
+    {
+      title: 'Создан',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 180,
+      render: (date: string) => formatDateTime(date),
+    },
+    {
+      title: 'Действия',
+      key: 'actions',
+      width: 200,
+      render: (_: any, record: User) => (
+        <Space>
+          <Button type="link" onClick={() => navigate(`/users/${record.id}`)}>
+            Детали
+          </Button>
+          {record.active ? (
+            <Button 
+              type="link" 
+              danger 
+              onClick={() => handleDeactivate(record.id)}
+              loading={deactivateUser.isPending}
+            >
+              Деактивировать
+            </Button>
+          ) : (
+            <Button 
+              type="link" 
+              onClick={() => handleActivate(record.id)}
+              loading={activateUser.isPending}
+            >
+              Активировать
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ]
+
+  return (
+    <div>
+      <h1>Пользователи</h1>
+      
+      <FilterPanel onReset={handleFilterReset}>
+        <SearchBar
+          placeholder="Поиск по username, имени или Telegram ID"
+          value={search}
+          onChange={setSearch}
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
+        <Select
+          placeholder="Статус"
+          allowClear
+          style={{ width: 150 }}
+          value={active}
+          onChange={(value) => {
+            setActive(value)
+            setPage(0)
+          }}
+        >
+          <Select.Option value={true}>Активные</Select.Option>
+          <Select.Option value={false}>Неактивные</Select.Option>
+        </Select>
+        <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
+          Обновить
+        </Button>
+      </FilterPanel>
+
+      <Card>
+        {data && (
+          <DataTable
+            data={data}
+            columns={columns}
+            loading={isLoading}
+            onPageChange={handlePageChange}
+          />
+        )}
+      </Card>
+    </div>
+  )
+}

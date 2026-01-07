@@ -1,34 +1,33 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-interface MetricsChartProps {
+interface BarChartProps {
   data: Array<{ name: string; [key: string]: string | number }>
   dataKeys: string[]
   colors?: string[]
 }
 
-export const MetricsChart = ({ 
+export const BarChart = ({ 
   data, 
   dataKeys, 
   colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300'] 
-}: MetricsChartProps) => {
+}: BarChartProps) => {
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data}>
+      <RechartsBarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis />
         <Tooltip />
         <Legend />
         {dataKeys.map((key, index) => (
-          <Line
+          <Bar
             key={key}
-            type="monotone"
             dataKey={key}
-            stroke={colors[index % colors.length]}
-            strokeWidth={2}
+            fill={colors[index % colors.length]}
           />
         ))}
-      </LineChart>
+      </RechartsBarChart>
     </ResponsiveContainer>
   )
 }
+

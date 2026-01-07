@@ -12,11 +12,8 @@ import { KafkaStatus } from './pages/Kafka/KafkaStatus'
 import { LogsViewer } from './pages/Logs/LogsViewer'
 import { Settings } from './pages/Settings/Settings'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
-import { useAuthStore } from './store/authStore'
 
 function App() {
-  const { isAuthenticated } = useAuthStore()
-
   return (
     <BrowserRouter>
       <Routes>

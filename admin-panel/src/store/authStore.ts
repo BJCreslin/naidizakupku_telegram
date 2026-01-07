@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
 
 interface User {
   id: number
@@ -16,11 +16,12 @@ interface AuthState {
   setAuth: (accessToken: string, refreshToken: string, user: User) => void
   clearAuth: () => void
   setUser: (user: User) => void
+  init: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isAuthenticated: false,
       user: null,
       accessToken: null,
@@ -48,15 +49,26 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => {
         set({ user })
       },
+      init: () => {
+        const accessToken = localStorage.getItem('accessToken')
+        const refreshToken = localStorage.getItem('refreshToken')
+        if (accessToken && refreshToken && get().user) {
+          set({
+            isAuthenticated: true,
+            accessToken,
+            refreshToken,
+          })
+        }
+      },
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
     }
   )
 )
+
+// Инициализация при загрузке модуля
+if (typeof window !== 'undefined') {
+  useAuthStore.getState().init()
+}
 
