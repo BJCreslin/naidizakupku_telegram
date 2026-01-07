@@ -101,6 +101,12 @@ src/main/resources/
 - `KafkaProducerService.kt` - отправка сообщений в Kafka топики верификации
 - `MetricsService.kt` - сервис для кастомных метрик приложения (коды, верификация, Telegram операции)
 - `TelegramBotExecutor.kt` - интерфейс для выполнения операций с Telegram Bot API (устранение циклических зависимостей)
+- `AdminAuthService.kt` - сервис аутентификации для админки (JWT токены, refresh токены)
+- `AdminAuditService.kt` - сервис аудита действий администраторов
+- `admin/AdminService.kt` - основной сервис для работы с данными в админке (пользователи, коды, сессии верификации, запросы аутентификации)
+- `admin/AdminMetricsService.kt` - сервис для агрегации метрик для админки с кэшированием (dashboard, коды, верификация, Telegram, Kafka)
+- `admin/AdminLogService.kt` - сервис для работы с логами в админке
+- `admin/KafkaAdminService.kt` - сервис для получения статуса Kafka (топики, consumer groups)
 
 ### 3. Repository Layer (`repository/`)
 **Назначение**: Доступ к данным
@@ -125,6 +131,7 @@ src/main/resources/
 - `TelegramBotProperties.kt` - data class для свойств конфигурации Telegram бота с префиксом `telegram.bot`, содержит token и name, используется в TelegramConfig для получения настроек бота из application.yml
 - `RateLimitConfig.kt` - конфигурация rate limiting для API endpoints с использованием Bucket4j
 - `WebClientConfig.kt` - конфигурация WebClient для HTTP запросов
+- `CacheConfig.kt` - конфигурация кэширования для приложения, включая отдельный кэш для метрик админки (TTL: 2 минуты, максимальный размер: 100 записей)
 
 ### 6. Handler Layer (`handler/`)
 **Назначение**: Обработчики команд Telegram бота
@@ -527,6 +534,21 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
 - **WebClientConfig**: Конфигурация для HTTP запросов
 - **Максимальный размер буфера**: 1MB для обработки больших ответов
 - **Использование**: Для внешних HTTP вызовов в сервисах
+
+### Конфигурация кэширования
+- **Провайдер**: Caffeine (in-memory cache)
+- **Общая конфигурация**: TTL 5 минут, максимальный размер 1000 записей
+- **Кэш метрик админки**: Отдельный CacheManager (`metricsCacheManager`) для метрик
+  - **TTL**: 2 минуты (метрики должны обновляться достаточно часто)
+  - **Максимальный размер**: 100 записей
+  - **Кэшируемые методы**: 
+    - `AdminMetricsService.getDashboardMetrics()` - кэш `dashboardMetrics`
+    - `AdminMetricsService.getCodeMetrics()` - кэш `codeMetrics`
+    - `AdminMetricsService.getVerificationMetrics()` - кэш `verificationMetrics`
+    - `AdminMetricsService.getTelegramMetrics()` - кэш `telegramMetrics`
+    - `AdminMetricsService.getKafkaMetrics()` - кэш `kafkaMetrics`
+- **Включение**: `@EnableCaching` в `TelegramApplication` и `CacheConfig`
+- **Конфигурация**: `CacheConfig.kt` - программная настройка кэша для метрик
 
 ### Переменные окружения
 

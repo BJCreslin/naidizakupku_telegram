@@ -5,6 +5,7 @@ import com.naidizakupku.telegram.domain.entity.VerificationStatus
 import com.naidizakupku.telegram.repository.VerificationSessionRepository
 import com.naidizakupku.telegram.service.MetricsService
 import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import java.time.Instant
 
@@ -21,6 +22,7 @@ class AdminMetricsService(
     /**
      * Получить метрики для dashboard
      */
+    @Cacheable(value = ["dashboardMetrics"], cacheManager = "metricsCacheManager")
     fun getDashboardMetrics(): MetricsDto {
         val codesMetrics = getCodeMetrics()
         val verificationMetrics = getVerificationMetrics()
@@ -39,6 +41,7 @@ class AdminMetricsService(
     /**
      * Получить метрики кодов
      */
+    @Cacheable(value = ["codeMetrics"], cacheManager = "metricsCacheManager")
     fun getCodeMetrics(): CodeMetrics {
         val generated = getCounterValue("telegram.codes.generated")
         val verified = getCounterValue("telegram.codes.verified", "result", "success")
@@ -61,6 +64,7 @@ class AdminMetricsService(
     /**
      * Получить метрики верификации
      */
+    @Cacheable(value = ["verificationMetrics"], cacheManager = "metricsCacheManager")
     fun getVerificationMetrics(): VerificationMetrics {
         val requests = getCounterValue("telegram.verification.requests")
         val confirmed = getCounterValue("telegram.verification.confirmed")
@@ -82,6 +86,7 @@ class AdminMetricsService(
     /**
      * Получить метрики Telegram
      */
+    @Cacheable(value = ["telegramMetrics"], cacheManager = "metricsCacheManager")
     fun getTelegramMetrics(): TelegramMetrics {
         val messagesSent = getCounterValue("telegram.messages.sent")
         val messagesFailed = getCounterValue("telegram.messages.failed")
@@ -105,6 +110,7 @@ class AdminMetricsService(
     /**
      * Получить метрики Kafka
      */
+    @Cacheable(value = ["kafkaMetrics"], cacheManager = "metricsCacheManager")
     fun getKafkaMetrics(): KafkaMetrics {
         val messagesSent = getCounterValue("kafka.messages.sent")
         val messagesReceived = getCounterValue("kafka.messages.received")
