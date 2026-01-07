@@ -82,6 +82,8 @@ src/main/resources/
 - `UserController.kt` - REST API для управления пользователями (CRUD операции, уведомления)
 - `CodeController.kt` - REST API для работы с кодами верификации
 - `interceptor/TracingInterceptor.kt` - перехватчик для автоматической обработки заголовков трассировки
+- `interceptor/RateLimitInterceptor.kt` - перехватчик для rate limiting API endpoints с использованием Bucket4j
+- `exception/GlobalExceptionHandler.kt` - глобальный обработчик исключений для REST API с централизованной обработкой ошибок
 
 ### 2. Service Layer (`service/`)
 **Назначение**: Бизнес-логика приложения
@@ -97,6 +99,8 @@ src/main/resources/
 - `VerificationSessionService.kt` - управление сессиями верификации
 - `TelegramNotificationService.kt` - отправка уведомлений в Telegram для верификации и авторизации с inline кнопками
 - `KafkaProducerService.kt` - отправка сообщений в Kafka топики верификации
+- `MetricsService.kt` - сервис для кастомных метрик приложения (коды, верификация, Telegram операции)
+- `TelegramBotExecutor.kt` - интерфейс для выполнения операций с Telegram Bot API (устранение циклических зависимостей)
 
 ### 3. Repository Layer (`repository/`)
 **Назначение**: Доступ к данным
@@ -118,6 +122,8 @@ src/main/resources/
 - `DatabaseConfig.kt` - конфигурация базы данных с условной загрузкой Liquibase
 - `KafkaConfig.kt` - настройки Kafka, создание топиков (user-events, notifications, верификация)
 - `TelegramConfig.kt` - настройки Telegram Bot (токен, имя, username)
+- `TelegramBotProperties.kt` - data class для свойств конфигурации Telegram бота с префиксом `telegram.bot`, содержит token и name, используется в TelegramConfig для получения настроек бота из application.yml
+- `RateLimitConfig.kt` - конфигурация rate limiting для API endpoints с использованием Bucket4j
 - `WebClientConfig.kt` - конфигурация WebClient для HTTP запросов
 
 ### 6. Handler Layer (`handler/`)
@@ -761,9 +767,11 @@ docker-compose up -d  # PostgreSQL + Kafka
 - **UUID валидация**: Проверка корректности correlationId с возвратом 400 Bad Request при ошибке
 
 ### Обработка исключений
+- `CodeServiceException` - исключение для ошибок сервиса работы с кодами
 - Ошибки БД: Логирование с деталями, возврат пользователю понятного сообщения
 - Ошибки генерации: Fallback на повторные попытки с ограничением
 - Недоступность БД: Graceful degradation с логированием ошибок
+- `GlobalExceptionHandler` - централизованная обработка всех исключений REST API
 
 ### Обработка ошибок верификации
 - Ошибки Kafka: Retry механизмы, логирование с correlationId

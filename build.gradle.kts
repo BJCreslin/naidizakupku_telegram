@@ -46,7 +46,7 @@ dependencies {
     implementation("org.glassfish.jaxb:jaxb-runtime:4.0.4")
     
     // Rate limiting
-    implementation("io.github.bucket4j:bucket4j-core:8.10.1")
+    implementation("com.bucket4j:bucket4j-core:8.10.0")
     
     // Circuit Breaker (Resilience4j)
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.1.0")
