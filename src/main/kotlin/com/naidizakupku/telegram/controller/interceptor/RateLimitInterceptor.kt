@@ -1,5 +1,6 @@
 package com.naidizakupku.telegram.controller.interceptor
 
+import io.github.bucket4j.Bandwidth
 import io.github.bucket4j.Bucket
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Перехватчик для rate limiting API endpoints
@@ -15,10 +17,14 @@ import org.springframework.web.servlet.HandlerInterceptor
 @Component
 class RateLimitInterceptor(
     private val apiRateLimiter: Bucket,
-    @Qualifier("codeVerificationRateLimiter") private val codeVerificationRateLimiter: Bucket
+    @Qualifier("codeVerificationRateLimiter") private val codeVerificationRateLimiter: Bucket,
+    @Qualifier("adminRateLimiterConfig") private val adminRateLimiterConfig: Bandwidth
 ) : HandlerInterceptor {
 
     private val logger = LoggerFactory.getLogger(RateLimitInterceptor::class.java)
+    
+    // Per-IP rate limiters для админки
+    private val adminRateLimiters = ConcurrentHashMap<String, Bucket>()
 
     override fun preHandle(
         request: HttpServletRequest,
@@ -30,6 +36,7 @@ class RateLimitInterceptor(
 
         // Выбираем rate limiter в зависимости от endpoint
         val bucket = when {
+            path.startsWith("/api/admin/") -> getAdminRateLimiter(clientIp)
             path.startsWith("/api/code/") -> codeVerificationRateLimiter
             else -> apiRateLimiter
         }
@@ -52,6 +59,17 @@ class RateLimitInterceptor(
         }
 
         return true
+    }
+
+    /**
+     * Получить или создать rate limiter для IP адреса в админке
+     */
+    private fun getAdminRateLimiter(ip: String): Bucket {
+        return adminRateLimiters.computeIfAbsent(ip) {
+            Bucket.builder()
+                .addLimit(adminRateLimiterConfig)
+                .build()
+        }
     }
 
     private fun getClientIp(request: HttpServletRequest): String {

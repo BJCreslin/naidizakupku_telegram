@@ -129,7 +129,7 @@ src/main/resources/
 - `KafkaConfig.kt` - настройки Kafka, создание топиков (user-events, notifications, верификация)
 - `TelegramConfig.kt` - настройки Telegram Bot (токен, имя, username)
 - `TelegramBotProperties.kt` - data class для свойств конфигурации Telegram бота с префиксом `telegram.bot`, содержит token и name, используется в TelegramConfig для получения настроек бота из application.yml
-- `RateLimitConfig.kt` - конфигурация rate limiting для API endpoints с использованием Bucket4j
+- `RateLimitConfig.kt` - конфигурация rate limiting для API endpoints с использованием Bucket4j (общий API, верификация кодов, генерация кодов, админка)
 - `WebClientConfig.kt` - конфигурация WebClient для HTTP запросов
 - `CacheConfig.kt` - конфигурация кэширования для приложения, включая отдельный кэш для метрик админки (TTL: 2 минуты, максимальный размер: 100 записей)
 
@@ -549,6 +549,19 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
     - `AdminMetricsService.getKafkaMetrics()` - кэш `kafkaMetrics`
 - **Включение**: `@EnableCaching` в `TelegramApplication` и `CacheConfig`
 - **Конфигурация**: `CacheConfig.kt` - программная настройка кэша для метрик
+
+### Конфигурация Rate Limiting
+- **Библиотека**: Bucket4j
+- **Реализация**: `RateLimitInterceptor` - перехватчик для всех API endpoints
+- **Типы rate limiters**:
+  - **Общий API rate limiter**: 100 запросов в минуту на IP (для всех endpoints кроме специальных)
+  - **Code verification rate limiter**: 10 запросов в минуту на IP (для `/api/code/` endpoints)
+  - **Code generation rate limiter**: 5 запросов в минуту на пользователя (для генерации кодов через Telegram)
+  - **Admin rate limiter**: 60 запросов в минуту на IP (для `/api/admin/` endpoints, per-IP rate limiting)
+- **Per-IP rate limiting для админки**: Используется `ConcurrentHashMap` для хранения отдельных buckets для каждого IP адреса
+- **Определение IP**: Поддержка заголовков `X-Forwarded-For` и `X-Real-IP` для работы за прокси/балансировщиком
+- **Ответ при превышении лимита**: HTTP 429 (Too Many Requests) с JSON сообщением и `retryAfter: 60`
+- **Логирование**: Все превышения лимитов логируются с уровнем WARN
 
 ### Переменные окружения
 

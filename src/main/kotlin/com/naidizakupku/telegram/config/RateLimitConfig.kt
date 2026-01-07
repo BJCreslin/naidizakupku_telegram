@@ -60,5 +60,17 @@ class RateLimitConfig {
             )
             .build()
     }
+
+    /**
+     * Конфигурация rate limiter для админки
+     * 60 запросов в минуту на IP
+     */
+    @Bean("adminRateLimiterConfig")
+    fun adminRateLimiterConfig(): Bandwidth {
+        return Bandwidth.classic(
+            60,
+            Refill.intervally(60, Duration.ofMinutes(1))
+        )
+    }
 }
 
