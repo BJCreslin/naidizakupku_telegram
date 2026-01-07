@@ -21,11 +21,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
       
       - name: Install dependencies
         working-directory: admin-panel
-        run: npm ci
+        run: npm install
       
       - name: Build admin panel
         working-directory: admin-panel
