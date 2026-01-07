@@ -107,6 +107,7 @@ src/main/resources/
 - `admin/AdminMetricsService.kt` - сервис для агрегации метрик для админки с кэшированием (dashboard, коды, верификация, Telegram, Kafka)
 - `admin/AdminLogService.kt` - сервис для работы с логами в админке
 - `admin/KafkaAdminService.kt` - сервис для получения статуса Kafka (топики, consumer groups)
+- `admin/AdminUserCreationService.kt` - сервис для создания первого администратора (доступен только если в системе нет администраторов)
 
 ### 3. Repository Layer (`repository/`)
 **Назначение**: Доступ к данным
@@ -132,6 +133,7 @@ src/main/resources/
 - `RateLimitConfig.kt` - конфигурация rate limiting для API endpoints с использованием Bucket4j (общий API, верификация кодов, генерация кодов, админка)
 - `WebClientConfig.kt` - конфигурация WebClient для HTTP запросов
 - `CacheConfig.kt` - конфигурация кэширования для приложения, включая отдельный кэш для метрик админки (TTL: 2 минуты, максимальный размер: 100 записей)
+- `WebMvcConfig.kt` - конфигурация для раздачи статических ресурсов админки через Spring Boot, поддержка SPA routing
 
 ### 6. Handler Layer (`handler/`)
 **Назначение**: Обработчики команд Telegram бота
@@ -352,6 +354,16 @@ src/main/resources/
 - `GET /api/admin/auth/me` - информация о текущем пользователе
   - **Headers**: `Authorization: Bearer <token>`
   - **Response**: `CurrentUserResponse` (id, username, email, role)
+  
+- `POST /api/admin/auth/register-first-admin` - регистрация первого администратора
+  - **Request Body**: `{"username": "string", "password": "string", "email": "string (optional)"}`
+  - **Response**: `CurrentUserResponse` (id, username, email, role)
+  - **Доступность**: Доступен только если в системе нет администраторов
+  - **Функциональность**: Создает первого администратора с ролью ADMIN через `AdminUserCreationService`
+  
+- `GET /api/admin/auth/has-admins` - проверка наличия администраторов в системе
+  - **Response**: `{"hasAdmins": boolean}`
+  - **Функциональность**: Проверяет наличие администраторов в системе
 
 ### TracingInterceptor
 **Назначение**: Автоматическая обработка заголовков трассировки
@@ -373,6 +385,14 @@ src/main/resources/
 
 ### Обзор
 Административная панель предоставляет веб-интерфейс для управления системой, мониторинга метрик и аудита действий. Панель использует JWT аутентификацию с refresh токенами и разделением ролей.
+
+### Раздача статических ресурсов
+Админка интегрирована в Spring Boot приложение и раздается как статические файлы:
+- **Путь**: `/admin/**` - все запросы к админке
+- **Статические файлы**: `/assets/**` - JS, CSS и другие ресурсы
+- **SPA Routing**: Все маршруты без расширения файла возвращают `index.html` для поддержки client-side routing
+- **Кеширование**: HTML файлы кешируются на 1 час, assets на 24 часа
+- **Конфигурация**: `WebMvcConfig.kt` - настройка resource handlers и SPA routing
 
 ### Архитектура админки
 
@@ -407,6 +427,8 @@ src/main/resources/
   - Spring Security с кастомным фильтром
   - Rate limiting (60 запросов/минуту на IP)
   - Аудит всех действий
+  - Разрешен доступ к статическим ресурсам `/admin/**` и `/assets/**` без аутентификации
+  - CORS настроен для работы с админкой (поддержка credentials, настраиваемые origins)
 
 ### Процесс аутентификации
 
@@ -628,6 +650,35 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
 - `requested_at` (TIMESTAMP, NOT NULL) - время создания запроса
 - `code` (VARCHAR(10), NULLABLE) - выданный код для аутентификации
 
+### Таблица `admin_users`
+- `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT) - уникальный идентификатор
+- `username` (VARCHAR(100), UNIQUE, NOT NULL) - имя пользователя для входа
+- `password_hash` (VARCHAR(255), NOT NULL) - хеш пароля (BCrypt)
+- `email` (VARCHAR(255), UNIQUE, NULLABLE) - email адрес администратора
+- `role` (VARCHAR(20), NOT NULL, DEFAULT 'VIEWER') - роль администратора (ADMIN, VIEWER)
+- `active` (BOOLEAN, NOT NULL, DEFAULT TRUE) - статус активности пользователя
+- `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время создания записи
+- `updated_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время последнего обновления
+
+### Таблица `admin_sessions`
+- `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT) - уникальный идентификатор
+- `admin_user_id` (BIGINT, NOT NULL) - ID администратора (FK к admin_users)
+- `access_token` (TEXT, NOT NULL) - JWT access token
+- `refresh_token` (TEXT, NOT NULL) - JWT refresh token
+- `expires_at` (TIMESTAMP, NOT NULL) - время истечения access token
+- `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время создания сессии
+
+### Таблица `admin_audit_log`
+- `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT) - уникальный идентификатор
+- `admin_user_id` (BIGINT, NULLABLE) - ID администратора (NULL для системных действий)
+- `action` (VARCHAR(50), NOT NULL) - тип действия (LOGIN, LOGOUT, USER_ACTIVATED, и т.д.)
+- `entity_type` (VARCHAR(50), NULLABLE) - тип затронутой сущности (USER, CODE, и т.д.)
+- `entity_id` (BIGINT, NULLABLE) - ID затронутой сущности
+- `details` (TEXT, NULLABLE) - детали действия (JSON или текст)
+- `ip_address` (VARCHAR(45), NULLABLE) - IP адрес запроса
+- `user_agent` (VARCHAR(500), NULLABLE) - User-Agent браузера
+- `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP) - время действия
+
 ### Индексы
 - `idx_users_telegram_id` - уникальный индекс по telegram_id
 - `idx_users_username` - индекс по username (для быстрого поиска)
@@ -649,12 +700,32 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
 - `idx_auth_requests_requested_at` - индекс по requested_at для очистки старых запросов
 - `idx_auth_requests_code` - индекс по code для быстрого поиска по коду
 
+#### Индексы для таблицы `admin_users`
+- `idx_admin_users_username` - уникальный индекс по username для быстрого поиска
+- `idx_admin_users_email` - уникальный индекс по email (если указан)
+- `idx_admin_users_role` - индекс по role для фильтрации по ролям
+- `idx_admin_users_active` - индекс по active для фильтрации активных пользователей
+
+#### Индексы для таблицы `admin_sessions`
+- `idx_admin_sessions_admin_user_id` - индекс по admin_user_id для поиска сессий пользователя
+- `idx_admin_sessions_refresh_token` - индекс по refresh_token для поиска сессии по токену
+- `idx_admin_sessions_expires_at` - индекс по expires_at для очистки истекших сессий
+
+#### Индексы для таблицы `admin_audit_log`
+- `idx_admin_audit_log_admin_user_id` - индекс по admin_user_id для поиска действий администратора
+- `idx_admin_audit_log_action` - индекс по action для фильтрации по типам действий
+- `idx_admin_audit_log_created_at` - индекс по created_at для временных запросов
+- `idx_admin_audit_log_entity` - составной индекс по entity_type и entity_id для поиска действий с сущностями
+
 ### Миграции
 - **001-create-users-table.xml** - создание таблицы users
 - **002-create-user-codes-table.xml** - создание таблицы user_codes для временных кодов
 - **003-create-verification-sessions-table.xml** - создание таблицы verification_sessions для сессий верификации
 - **004-create-auth-requests-table.xml** - создание таблицы auth_requests для запросов аутентификации
 - **005-add-code-to-auth-requests.xml** - добавление столбца code в таблицу auth_requests
+- **006-create-admin-users-table.xml** - создание таблицы admin_users для пользователей админки
+- **007-create-admin-sessions-table.xml** - создание таблицы admin_sessions для JWT сессий
+- **008-create-admin-audit-log-table.xml** - создание таблицы admin_audit_log для аудита действий администраторов
 - **002-add-user-fields.xml** - добавление дополнительных полей
 - **002-remove-user-fields.xml** - удаление неиспользуемых полей
 
@@ -789,6 +860,14 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
 - Ограниченные endpoints мониторинга (только health, info)
 - Увеличен размер лог-файлов (50MB) с сокращенной историей (7 дней)
 
+### Конфигурация раздачи статических ресурсов
+- **WebMvcConfig**: Настройка resource handlers для админки
+  - `/admin/**` → `classpath:/static/admin/` (кеширование 1 час)
+  - `/assets/**` → `classpath:/static/admin/assets/` (кеширование 24 часа)
+  - SPA routing: все запросы без расширения файла возвращают `index.html`
+- **SecurityConfig**: Разрешен доступ к статическим ресурсам без аутентификации
+- **CORS**: Настроен для работы с админкой (поддержка credentials, настраиваемые origins, max age 1 час)
+
 ### Конфигурация базы данных
 - **PostgreSQL**: Основная БД для продакшна и разработки
 - **Liquibase**: Управление миграциями БД с условной загрузкой
@@ -884,6 +963,14 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
 - `SERVER_PORT` - порт приложения (по умолчанию: 8080)
 - `SPRING_PROFILES_ACTIVE` - активный профиль Spring (dev/prod)
 
+#### Админка (Frontend)
+- `VITE_API_URL` - URL API для админки (опционально, по умолчанию используется относительный путь `/api` в production)
+
+#### Админка (Backend)
+- `ADMIN_JWT_SECRET` - секретный ключ для JWT токенов (обязательно в production!)
+- `ADMIN_JWT_ACCESS_EXPIRATION_MINUTES` - время жизни access token (по умолчанию: 60 минут)
+- `ADMIN_JWT_REFRESH_EXPIRATION_DAYS` - время жизни refresh token (по умолчанию: 7 дней)
+
 #### Продакшн (VPS)
 - `VPS_IP` - IP адрес VPS сервера
 - `VPS_USER` - пользователь для подключения к VPS
@@ -903,6 +990,62 @@ docker-compose up -d  # PostgreSQL + Kafka
 ```
 
 **Важно**: В продакшне PostgreSQL должен быть запущен локально на хосте, а приложение в контейнере подключается к нему через `host.docker.internal:5432`.
+
+### Сборка админки
+
+#### Локальная сборка
+```bash
+# Сборка админки отдельно
+cd admin-panel
+npm install
+npm run build
+
+# Сборка всего приложения (админка будет автоматически скопирована)
+cd ..
+./gradlew clean build
+```
+
+#### Docker сборка
+Dockerfile использует multi-stage build:
+1. **Stage 1 (frontend-build)**: Собирает админку через Node.js
+2. **Stage 2 (build)**: Копирует собранную админку и собирает Spring Boot приложение
+3. **Stage 3 (runtime)**: Создает runtime образ с JAR файлом
+
+```bash
+docker build -t naidizakupku-telegram .
+```
+
+#### Создание первого администратора
+
+**Через API:**
+```bash
+# Проверка наличия администраторов
+curl http://localhost:8080/api/admin/auth/has-admins
+
+# Создание первого администратора
+curl -X POST http://localhost:8080/api/admin/auth/register-first-admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "securepassword123",
+    "email": "admin@example.com"
+  }'
+```
+
+**Через скрипт:**
+```bash
+# Linux/Mac
+./scripts/create-first-admin.sh admin securepassword123 admin@example.com
+
+# Windows
+scripts\create-first-admin.bat admin securepassword123 admin@example.com
+```
+
+**Важно**: Endpoint `/api/admin/auth/register-first-admin` доступен только если в системе нет администраторов. После создания первого администратора этот endpoint становится недоступным.
+
+#### Доступ к админке
+- **Локально**: `http://localhost:8080/admin`
+- **Production**: `https://your-domain.com/admin`
 
 ### Исправления проблем развертывания
 - **Проблема с подключением к БД**: Исправлено использование `host.docker.internal` вместо IP адреса
@@ -1127,7 +1270,9 @@ docker-compose up -d  # PostgreSQL + Kafka
 
 ## CI/CD Pipeline
 - Автоматическая сборка при изменении кода
-- Сборка Docker образа
+- **Сборка админки**: Отдельный job для сборки frontend (Node.js 20, npm ci, npm run build)
+- **Интеграция админки**: Автоматическое копирование собранных файлов в `src/main/resources/static/admin/`
+- Сборка Docker образа (multi-stage build с отдельным этапом для админки)
 - Деплой на Ubuntu 20.04 сервер
 - **Проверка Kafka**: Валидация подключения к Kafka серверам
 - **Проверка миграций**: Валидация Liquibase changelog файлов
