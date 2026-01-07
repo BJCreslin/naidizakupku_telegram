@@ -2,6 +2,7 @@ package com.naidizakupku.telegram.init
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -12,6 +13,7 @@ import org.telegram.telegrambots.meta.generics.LongPollingBot
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession
 
 @Component
+@ConditionalOnProperty(name = ["telegram.bot.token"])
 class BotInitializer(
     private val telegramBot: LongPollingBot
 ) {
