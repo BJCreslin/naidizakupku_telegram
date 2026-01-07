@@ -4,7 +4,7 @@ FROM node:20-alpine AS frontend-build
 # Собираем админку
 WORKDIR /app/admin-panel
 COPY admin-panel/package*.json ./
-RUN npm ci
+RUN npm install
 COPY admin-panel ./
 RUN npm run build
 
