@@ -83,3 +83,34 @@ tasks.bootJar {
     archiveFileName.set("app.jar")
 }
 
+// Задача для копирования собранной админки в resources/static/admin
+tasks.register<Copy>("copyAdminPanel") {
+    description = "Copy admin panel build to resources/static/admin"
+    group = "build"
+    
+    from("admin-panel/dist") {
+        include("**/*")
+    }
+    into("src/main/resources/static/admin")
+    
+    // Выполняется только если директория admin-panel/dist существует
+    onlyIf { file("admin-panel/dist").exists() }
+}
+
+// Задача для сборки админки (если нужно собирать локально)
+tasks.register<Exec>("buildAdminPanel") {
+    description = "Build admin panel"
+    group = "build"
+    
+    workingDir = file("admin-panel")
+    commandLine("npm", "run", "build")
+    
+    // Выполняется только если package.json существует
+    onlyIf { file("admin-panel/package.json").exists() }
+}
+
+// Зависимость: перед сборкой JAR копируем админку
+tasks.named("processResources") {
+    dependsOn("copyAdminPanel")
+}
+

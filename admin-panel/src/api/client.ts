@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// В production используем относительный путь, если VITE_API_URL не установлен
+// Это позволяет админке работать через тот же домен, что и backend
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8080')
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,

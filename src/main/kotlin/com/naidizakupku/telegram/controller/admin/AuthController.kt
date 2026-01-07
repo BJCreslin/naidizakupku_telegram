@@ -1,6 +1,7 @@
 package com.naidizakupku.telegram.controller.admin
 
 import com.naidizakupku.telegram.service.AdminAuthService
+import com.naidizakupku.telegram.service.admin.AdminUserCreationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -21,7 +22,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/admin/auth")
 @Tag(name = "Admin Auth", description = "API для аутентификации администраторов")
 class AuthController(
-    private val adminAuthService: AdminAuthService
+    private val adminAuthService: AdminAuthService,
+    private val adminUserCreationService: AdminUserCreationService
 ) {
 
     /**
@@ -43,6 +45,20 @@ class AuthController(
     data class RefreshTokenRequest(
         @field:NotBlank(message = "Refresh token обязателен")
         val refreshToken: String
+    )
+
+    /**
+     * Запрос на регистрацию первого администратора
+     */
+    @Schema(description = "Запрос на регистрацию первого администратора")
+    data class RegisterFirstAdminRequest(
+        @field:NotBlank(message = "Username обязателен")
+        val username: String,
+        
+        @field:NotBlank(message = "Password обязателен")
+        val password: String,
+        
+        val email: String? = null
     )
 
     /**
@@ -130,6 +146,66 @@ class AuthController(
         val token = authHeader.removePrefix("Bearer ")
         adminAuthService.logout(token, httpRequest)
         return ResponseEntity.ok(mapOf("message" to "Successfully logged out"))
+    }
+
+    /**
+     * Регистрация первого администратора
+     * Доступна только если в системе нет ни одного администратора
+     */
+    @Operation(
+        summary = "Регистрация первого администратора",
+        description = "Создает первого администратора в системе. Доступно только если в системе нет администраторов."
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Администратор успешно создан",
+                content = [Content(schema = Schema(implementation = CurrentUserResponse::class))]
+            ),
+            ApiResponse(responseCode = "400", description = "Некорректные данные или администратор уже существует"),
+            ApiResponse(responseCode = "409", description = "Администратор уже существует в системе")
+        ]
+    )
+    @PostMapping("/register-first-admin")
+    fun registerFirstAdmin(
+        @Valid @RequestBody request: RegisterFirstAdminRequest
+    ): ResponseEntity<CurrentUserResponse> {
+        val admin = adminUserCreationService.createFirstAdminIfNotExists(
+            username = request.username,
+            password = request.password,
+            email = request.email
+        )
+
+        return ResponseEntity.ok(
+            CurrentUserResponse(
+                id = admin.id!!,
+                username = admin.username,
+                email = admin.email,
+                role = admin.role.name
+            )
+        )
+    }
+
+    /**
+     * Проверка наличия администраторов в системе
+     */
+    @Operation(
+        summary = "Проверка наличия администраторов",
+        description = "Проверяет, есть ли в системе администраторы"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Статус наличия администраторов"
+            )
+        ]
+    )
+    @GetMapping("/has-admins")
+    fun hasAdmins(): ResponseEntity<Map<String, Boolean>> {
+        val hasAdmins = adminUserCreationService.hasAdmins()
+        return ResponseEntity.ok(mapOf("hasAdmins" to hasAdmins))
     }
 
     /**

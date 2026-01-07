@@ -1,4 +1,14 @@
 # Multi-stage build для оптимизации размера образа
+FROM node:20-alpine AS frontend-build
+
+# Собираем админку
+WORKDIR /app/admin-panel
+COPY admin-panel/package*.json ./
+RUN npm ci
+COPY admin-panel ./
+RUN npm run build
+
+# Сборка backend
 FROM gradle:8.8-jdk21 AS build
 
 # Устанавливаем рабочую директорию
@@ -10,6 +20,9 @@ COPY gradlew build.gradle.kts gradle.properties ./
 
 # Скачиваем зависимости
 RUN gradle dependencies --no-daemon
+
+# Копируем собранную админку из frontend-build
+COPY --from=frontend-build /app/admin-panel/dist src/main/resources/static/admin
 
 # Копируем исходный код
 COPY src src

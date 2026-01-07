@@ -60,12 +60,20 @@ class SecurityConfig(
                 requests
                     // Публичные endpoints для аутентификации
                     .requestMatchers(
-                        "/api/admin/auth/**",
+                        "/api/admin/auth/login",
+                        "/api/admin/auth/refresh",
+                        "/api/admin/auth/register-first-admin",
+                        "/api/admin/auth/has-admins",
                         "/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/actuator/health",
                         "/actuator/info"
+                    ).permitAll()
+                    // Статические ресурсы админки доступны без аутентификации
+                    .requestMatchers(
+                        "/admin/**",
+                        "/assets/**"
                     ).permitAll()
                     // Все остальные админские endpoints требуют аутентификации
                     .requestMatchers("/api/admin/**").authenticated()
@@ -80,11 +88,18 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOriginPatterns = listOf("*")
+        // В production лучше указать конкретные домены вместо "*"
+        // Для разработки можно использовать "*", но в production нужно указать конкретные origins
+        configuration.allowedOriginPatterns = listOf(
+            "http://localhost:*",
+            "https://*",
+            "http://*"
+        )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
         configuration.exposedHeaders = listOf("Authorization", "X-Trace-Id", "X-Span-Id")
+        configuration.maxAge = 3600L // Кеширование preflight запросов на 1 час
         
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/api/**", configuration)
