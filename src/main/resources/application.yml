@@ -123,6 +123,13 @@ telegram:
     expiration:
       minutes: ${TELEGRAM_CODE_EXPIRATION_MINUTES:5}
 
+# Настройки JWT для админки
+admin:
+  jwt:
+    secret: ${ADMIN_JWT_SECRET:default-secret-key-change-in-production}
+    access-token-expiration-minutes: ${ADMIN_JWT_ACCESS_EXPIRATION_MINUTES:60}
+    refresh-token-expiration-days: ${ADMIN_JWT_REFRESH_EXPIRATION_DAYS:7}
+
 # OpenAPI/Swagger конфигурация
 springdoc:
   api-docs:
