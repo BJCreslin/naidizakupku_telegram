@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="007-create-admin-sessions-table" author="system">
+        <comment>Создание таблицы для хранения сессий админов</comment>
+        
+        <createTable tableName="admin_sessions">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="admin_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="access_token" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="refresh_token" type="TEXT">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <!-- Внешний ключ на admin_users -->
+        <addForeignKeyConstraint
+                baseTableName="admin_sessions"
+                baseColumnNames="admin_user_id"
+                constraintName="fk_admin_sessions_admin_user_id"
+                referencedTableName="admin_users"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+        
+        <!-- Создание индексов для оптимизации запросов -->
+        <createIndex tableName="admin_sessions" indexName="idx_admin_sessions_admin_user_id">
+            <column name="admin_user_id"/>
+        </createIndex>
+        
+        <createIndex tableName="admin_sessions" indexName="idx_admin_sessions_refresh_token">
+            <column name="refresh_token"/>
+        </createIndex>
+        
+        <createIndex tableName="admin_sessions" indexName="idx_admin_sessions_expires_at">
+            <column name="expires_at"/>
+        </createIndex>
+        
+    </changeSet>
+
+</databaseChangeLog>
+

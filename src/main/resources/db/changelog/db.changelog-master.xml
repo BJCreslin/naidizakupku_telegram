@@ -10,6 +10,9 @@
     <include file="db/changelog/changes/003-create-verification-sessions-table.xml"/>
     <include file="db/changelog/changes/004-create-auth-requests-table.xml"/>
     <include file="db/changelog/changes/005-add-code-to-auth-requests.xml"/>
+    <include file="db/changelog/changes/006-create-admin-users-table.xml"/>
+    <include file="db/changelog/changes/007-create-admin-sessions-table.xml"/>
+    <include file="db/changelog/changes/008-create-admin-audit-log-table.xml"/>
 
 </databaseChangeLog>
 

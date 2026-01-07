@@ -24,6 +24,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.retry:spring-retry")
@@ -51,6 +52,14 @@ dependencies {
     // Circuit Breaker (Resilience4j)
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.1.0")
     implementation("io.github.resilience4j:resilience4j-kotlin:2.1.0")
+    
+    // JWT для админки
+    implementation("io.jsonwebtoken:jjwt-api:0.12.3")
+    implementation("io.jsonwebtoken:jjwt-impl:0.12.3")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.12.3")
+    
+    // BCrypt для хеширования паролей
+    implementation("org.springframework.security:spring-security-crypto")
     
     runtimeOnly("org.postgresql:postgresql")
     
