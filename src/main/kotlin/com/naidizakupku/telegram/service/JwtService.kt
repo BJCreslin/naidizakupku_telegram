@@ -6,7 +6,7 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.security.Key
+import javax.crypto.SecretKey
 import java.util.*
 
 /**
@@ -19,7 +19,7 @@ class JwtService(
     
     private val logger = LoggerFactory.getLogger(JwtService::class.java)
     
-    private val secretKey: Key by lazy {
+    private val secretKey: SecretKey by lazy {
         val secretBytes = jwtProperties.secret.toByteArray()
         // Для HMAC-SHA256 требуется минимум 256 бит (32 байта)
         if (secretBytes.size < 32) {
@@ -129,11 +129,11 @@ class JwtService(
      * Извлекает claims из токена
      */
     private fun extractClaims(token: String): Claims {
-        return Jwts.parserBuilder()
-            .setSigningKey(secretKey)
+        return Jwts.parser()
+            .verifyWith(secretKey)
             .build()
-            .parseClaimsJws(token)
-            .body
+            .parseSignedClaims(token)
+            .payload
     }
 }
 

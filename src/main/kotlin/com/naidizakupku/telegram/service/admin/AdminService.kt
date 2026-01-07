@@ -172,31 +172,28 @@ class AdminService(
                         Page.empty(pageable)
                     }
                 } else {
-                    userCodeRepository.findAll(pageable).filter { 
+                    val filtered = userCodeRepository.findAll(pageable).content.filter { 
                         it.telegramUserId == userId && it.isExpired()
-                    }.let { 
-                        org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong())
                     }
+                    org.springframework.data.domain.PageImpl(filtered, pageable, filtered.size.toLong())
                 }
             }
             userId != null -> {
-                userCodeRepository.findAll(pageable).filter { it.telegramUserId == userId }
-                    .let { org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) }
+                val filtered = userCodeRepository.findAll(pageable).content.filter { it.telegramUserId == userId }
+                org.springframework.data.domain.PageImpl(filtered, pageable, filtered.size.toLong())
             }
             active != null -> {
                 if (active) {
-                    userCodeRepository.findAll(pageable).filter { it.isActive() }
-                        .let { org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) }
+                    val filtered = userCodeRepository.findAll(pageable).content.filter { it.isActive() }
+                    org.springframework.data.domain.PageImpl(filtered, pageable, filtered.size.toLong())
                 } else {
-                    userCodeRepository.findExpiredCodes(now).let { expired ->
-                        org.springframework.data.domain.PageImpl(expired, pageable, expired.size.toLong())
-                    }
+                    val expired = userCodeRepository.findExpiredCodes(now)
+                    org.springframework.data.domain.PageImpl(expired, pageable, expired.size.toLong())
                 }
             }
             expired != null && expired -> {
-                userCodeRepository.findExpiredCodes(now).let { expired ->
-                    org.springframework.data.domain.PageImpl(expired, pageable, expired.size.toLong())
-                }
+                val expired = userCodeRepository.findExpiredCodes(now)
+                org.springframework.data.domain.PageImpl(expired, pageable, expired.size.toLong())
             }
             else -> userCodeRepository.findAll(pageable)
         }
@@ -264,12 +261,12 @@ class AdminService(
                 org.springframework.data.domain.PageImpl(sessions, pageable, sessions.size.toLong())
             }
             status != null -> {
-                verificationSessionRepository.findAll(pageable).filter { it.status == status }
-                    .let { org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) }
+                val filtered = verificationSessionRepository.findAll(pageable).content.filter { it.status == status }
+                org.springframework.data.domain.PageImpl(filtered, pageable, filtered.size.toLong())
             }
             userId != null -> {
-                verificationSessionRepository.findAll(pageable).filter { it.telegramUserId == userId }
-                    .let { org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) }
+                val filtered = verificationSessionRepository.findAll(pageable).content.filter { it.telegramUserId == userId }
+                org.springframework.data.domain.PageImpl(filtered, pageable, filtered.size.toLong())
             }
             else -> verificationSessionRepository.findAll(pageable)
         }
