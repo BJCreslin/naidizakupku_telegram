@@ -224,6 +224,135 @@ src/main/resources/
   - **Статус**: TODO - требует реализации получения статуса из сервиса
   - **Валидация**: Проверка корректности UUID формата
 
+### AdminController (`/api/admin`)
+**Назначение**: REST API для административной панели
+
+#### Endpoints:
+
+##### Users Management
+- `GET /api/admin/users` - получение списка пользователей с пагинацией, поиском и фильтрами
+  - **Query Parameters**: `page` (default: 0), `size` (default: 20), `search` (optional), `active` (optional)
+  - **Response**: `PagedResponse<UserDto>`
+  
+- `GET /api/admin/users/{id}` - получение пользователя по ID
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `UserDto`
+  
+- `PUT /api/admin/users/{id}/activate` - активация пользователя
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `UserDto`
+  
+- `PUT /api/admin/users/{id}/deactivate` - деактивация пользователя
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `UserDto`
+
+##### Codes Management
+- `GET /api/admin/codes` - получение списка кодов с пагинацией и фильтрами
+  - **Query Parameters**: `page`, `size`, `userId` (optional), `active` (optional), `expired` (optional)
+  - **Response**: `PagedResponse<CodeDto>`
+  
+- `GET /api/admin/codes/{id}` - получение кода по ID
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `CodeDto`
+  
+- `DELETE /api/admin/codes/{id}` - удаление кода
+  - **Path Parameter**: `id` (Long)
+  - **Response**: `{"message": "Code deleted successfully"}`
+  
+- `GET /api/admin/codes/stats` - статистика по кодам
+  - **Response**: `CodeStatsDto` (total, active, expired)
+
+##### Verification Sessions
+- `GET /api/admin/verification-sessions` - получение списка сессий верификации
+  - **Query Parameters**: `page`, `size`, `status` (optional), `userId` (optional)
+  - **Response**: `PagedResponse<AdminVerificationDto>`
+  
+- `GET /api/admin/verification-sessions/{correlationId}` - получение сессии по correlation ID
+  - **Path Parameter**: `correlationId` (UUID)
+  - **Response**: `AdminVerificationDto`
+  
+- `GET /api/admin/verification-sessions/stats` - статистика по сессиям верификации
+  - **Response**: `VerificationStatsDto`
+
+##### Auth Requests
+- `GET /api/admin/auth-requests` - получение списка запросов аутентификации
+  - **Query Parameters**: `page`, `size`, `userId` (optional), `traceId` (optional)
+  - **Response**: `PagedResponse<AuthRequestDto>`
+  
+- `GET /api/admin/auth-requests/{traceId}` - получение запроса по trace ID
+  - **Path Parameter**: `traceId` (UUID)
+  - **Response**: `AuthRequestDto`
+  
+- `GET /api/admin/auth-requests/stats` - статистика по запросам аутентификации
+  - **Response**: `AuthRequestStatsDto`
+
+##### Metrics
+- `GET /api/admin/metrics/dashboard` - агрегированные метрики для dashboard
+  - **Response**: `MetricsDto` (codes, verification, telegram, kafka)
+  - **Кэширование**: 2 минуты
+  
+- `GET /api/admin/metrics/codes` - метрики кодов
+  - **Query Parameter**: `period` (24h, 7d, 30d, default: 24h)
+  - **Response**: `CodeMetrics`
+  - **Кэширование**: 2 минуты
+  
+- `GET /api/admin/metrics/verification` - метрики верификации
+  - **Query Parameter**: `period` (24h, 7d, 30d, default: 24h)
+  - **Response**: `VerificationMetrics`
+  - **Кэширование**: 2 минуты
+  
+- `GET /api/admin/metrics/telegram` - метрики Telegram
+  - **Query Parameter**: `period` (24h, 7d, 30d, default: 24h)
+  - **Response**: `TelegramMetrics`
+  - **Кэширование**: 2 минуты
+  
+- `GET /api/admin/metrics/kafka` - метрики Kafka
+  - **Query Parameter**: `period` (24h, 7d, 30d, default: 24h)
+  - **Response**: `KafkaMetrics`
+  - **Кэширование**: 2 минуты
+
+##### Kafka
+- `GET /api/admin/kafka/topics` - статус Kafka топиков
+  - **Response**: `KafkaStatusDto` (список топиков с информацией о партициях, репликах, размере)
+  
+- `GET /api/admin/kafka/consumer-groups` - список consumer groups
+  - **Response**: `List<ConsumerGroupInfo>`
+
+##### Logs
+- `GET /api/admin/logs` - получение логов
+  - **Query Parameters**: `level` (optional), `limit` (default: 100)
+  - **Response**: `List<LogEntry>`
+
+##### Settings
+- `GET /api/admin/settings` - получение настроек
+  - **Response**: `SettingsDto`
+  
+- `PUT /api/admin/settings` - обновление настроек
+  - **Request Body**: `SettingsDto`
+  - **Response**: `SettingsDto`
+
+### AuthController (`/api/admin/auth`)
+**Назначение**: Аутентификация администраторов
+
+#### Endpoints:
+- `POST /api/admin/auth/login` - вход в систему
+  - **Request Body**: `{"username": "string", "password": "string"}`
+  - **Response**: `AuthResponse` (accessToken, refreshToken, expiresAt, user)
+  - **Аудит**: Логирование попыток входа (успешных и неудачных)
+  
+- `POST /api/admin/auth/refresh` - обновление токена
+  - **Request Body**: `{"refreshToken": "string"}`
+  - **Response**: `AuthResponse` (новые accessToken и refreshToken)
+  
+- `POST /api/admin/auth/logout` - выход из системы
+  - **Headers**: `Authorization: Bearer <token>`
+  - **Response**: `{"message": "Successfully logged out"}`
+  - **Функциональность**: Удаление сессии из БД
+  
+- `GET /api/admin/auth/me` - информация о текущем пользователе
+  - **Headers**: `Authorization: Bearer <token>`
+  - **Response**: `CurrentUserResponse` (id, username, email, role)
+
 ### TracingInterceptor
 **Назначение**: Автоматическая обработка заголовков трассировки
 
@@ -239,6 +368,162 @@ src/main/resources/
 - Добавление заголовков в MDC для логирования
 - Возврат заголовков в response для клиента
 - Сохранение контекста в request attributes
+
+## Административная панель
+
+### Обзор
+Административная панель предоставляет веб-интерфейс для управления системой, мониторинга метрик и аудита действий. Панель использует JWT аутентификацию с refresh токенами и разделением ролей.
+
+### Архитектура админки
+
+#### Frontend (React + TypeScript)
+- **Фреймворк**: React 18 с TypeScript
+- **UI библиотека**: Ant Design 5
+- **Роутинг**: React Router v6
+- **State Management**: Zustand
+- **HTTP клиент**: Axios
+- **Запросы**: React Query (TanStack Query)
+- **Графики**: Recharts
+- **Оптимизации**: 
+  - Lazy loading страниц
+  - Виртуализация больших списков
+  - Кэширование метрик (2 минуты)
+  - Code splitting для уменьшения bundle size
+  - React.memo и useMemo для оптимизации ререндеров
+
+#### Backend (Spring Boot)
+- **Контроллеры**: 
+  - `AdminController` - основной API для работы с данными
+  - `AuthController` - аутентификация и авторизация
+- **Сервисы**:
+  - `AdminService` - бизнес-логика работы с данными
+  - `AdminAuthService` - аутентификация и управление сессиями
+  - `AdminMetricsService` - агрегация метрик с кэшированием
+  - `AdminLogService` - работа с логами
+  - `AdminAuditService` - аудит действий администраторов
+  - `KafkaAdminService` - мониторинг Kafka
+- **Безопасность**:
+  - JWT токены (access + refresh)
+  - Spring Security с кастомным фильтром
+  - Rate limiting (60 запросов/минуту на IP)
+  - Аудит всех действий
+
+### Процесс аутентификации
+
+#### 1. Вход в систему (`POST /api/admin/auth/login`)
+
+**Шаги**:
+1. Клиент отправляет `username` и `password` в теле запроса
+2. `AdminAuthService.login()` получает запрос
+3. Spring Security `AuthenticationManager` проверяет учетные данные:
+   - Загружает пользователя через `AdminUserDetailsService`
+   - Проверяет пароль через `PasswordEncoder` (BCrypt)
+   - Проверяет, что пользователь активен (`active = true`)
+4. При успешной аутентификации:
+   - Генерируется JWT access token (срок действия: настраивается, по умолчанию 60 минут)
+   - Генерируется JWT refresh token (срок действия: настраивается, по умолчанию 7 дней)
+   - Создается запись в таблице `admin_sessions` с токенами и временем истечения
+   - Логируется успешный вход в `admin_audit_log`
+   - Возвращается `AuthResponse` с токенами и информацией о пользователе
+
+**Обработка ошибок**:
+- Неверные учетные данные → HTTP 401, логирование в audit log
+- Неактивный пользователь → HTTP 401
+- Валидация входных данных → HTTP 400
+
+#### 2. Использование access token
+
+**Защищенные endpoints**:
+- Все endpoints `/api/admin/*` (кроме `/api/admin/auth/login` и `/api/admin/auth/refresh`)
+- Требуют заголовок `Authorization: Bearer <access_token>`
+
+**Процесс**:
+1. Клиент добавляет заголовок `Authorization: Bearer <access_token>` к каждому запросу
+2. `JwtAuthenticationFilter` перехватывает запрос:
+   - Извлекает токен из заголовка
+   - Валидирует токен через `JwtService.validateToken()`
+   - Проверяет, что пользователь существует и активен
+   - Создает `Authentication` объект для Spring Security
+3. При успешной валидации запрос проходит дальше
+4. При ошибке → HTTP 401 Unauthorized
+
+#### 3. Обновление токена (`POST /api/admin/auth/refresh`)
+
+**Шаги**:
+1. Клиент отправляет `refreshToken` в теле запроса
+2. `AdminAuthService.refreshToken()`:
+   - Находит сессию по `refreshToken` в БД
+   - Проверяет, что сессия не истекла
+   - Проверяет, что пользователь активен
+   - Генерирует новые access и refresh токены
+   - Обновляет запись в `admin_sessions`
+   - Удаляет старую сессию
+   - Возвращает новые токены
+
+**Обработка ошибок**:
+- Неверный или истекший refresh token → HTTP 401
+- Неактивный пользователь → HTTP 401
+
+#### 4. Выход из системы (`POST /api/admin/auth/logout`)
+
+**Шаги**:
+1. Клиент отправляет запрос с заголовком `Authorization: Bearer <access_token>`
+2. `AdminAuthService.logout()`:
+   - Извлекает токен из заголовка
+   - Находит сессию по access token
+   - Удаляет сессию из БД (`admin_sessions`)
+   - Логирует выход в `admin_audit_log`
+3. Возвращается успешный ответ
+
+#### 5. Получение информации о текущем пользователе (`GET /api/admin/auth/me`)
+
+**Шаги**:
+1. Клиент отправляет запрос с заголовком `Authorization: Bearer <access_token>`
+2. `AuthController.getCurrentUser()`:
+   - Валидирует токен через `AdminAuthService.validateToken()`
+   - Возвращает информацию о пользователе (id, username, email, role)
+
+### Роли администраторов
+
+- **ADMIN** - полный доступ ко всем функциям админки
+- **VIEWER** - только просмотр данных, без возможности изменений
+
+### Аудит действий
+
+Все действия администраторов логируются в таблицу `admin_audit_log`:
+- **LOGIN** / **LOGIN_FAILED** - попытки входа
+- **LOGOUT** - выход из системы
+- **USER_ACTIVATED** / **USER_DEACTIVATED** - активация/деактивация пользователей
+- **CODE_DELETED** - удаление кодов
+- И другие действия в зависимости от операций
+
+Каждая запись содержит:
+- ID администратора (или NULL для системных действий)
+- Тип действия
+- Тип и ID затронутой сущности
+- Детали действия
+- IP адрес и User-Agent
+- Время действия
+
+### Кэширование метрик
+
+Метрики админки кэшируются для снижения нагрузки:
+- **Провайдер**: Caffeine
+- **TTL**: 2 минуты
+- **Максимальный размер**: 100 записей
+- **Кэшируемые методы**:
+  - `getDashboardMetrics()` → кэш `dashboardMetrics`
+  - `getCodeMetrics()` → кэш `codeMetrics`
+  - `getVerificationMetrics()` → кэш `verificationMetrics`
+  - `getTelegramMetrics()` → кэш `telegramMetrics`
+  - `getKafkaMetrics()` → кэш `kafkaMetrics`
+
+### Rate Limiting для админки
+
+- **Лимит**: 60 запросов в минуту на IP адрес
+- **Реализация**: Per-IP rate limiting через `ConcurrentHashMap` с отдельными buckets
+- **Определение IP**: Поддержка заголовков `X-Forwarded-For` и `X-Real-IP`
+- **Ответ при превышении**: HTTP 429 Too Many Requests
 
 ## Поток данных
 
