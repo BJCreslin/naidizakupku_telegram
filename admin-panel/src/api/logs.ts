@@ -2,6 +2,7 @@ import { apiClient } from './client'
 import { PagedResponse } from '../types/api'
 
 export interface LogEntry {
+  id?: string | number
   level: string
   timestamp: string
   logger: string
