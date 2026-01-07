@@ -158,6 +158,7 @@ class UserCodeService(
     }
 
     @CacheEvict(value = ["userCodes"], allEntries = true)
+    @Transactional
     fun cleanupExpiredCodes() {
         try {
             val now = LocalDateTime.now()
