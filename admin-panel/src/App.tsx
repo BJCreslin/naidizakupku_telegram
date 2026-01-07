@@ -15,7 +15,7 @@ const VerificationSessionsList = lazy(() => import('./pages/Verification/Session
 const AuthRequestsList = lazy(() => import('./pages/AuthRequests/AuthRequestsList').then(m => ({ default: m.AuthRequestsList })))
 const MetricsDashboard = lazy(() => import('./pages/Metrics/MetricsDashboard').then(m => ({ default: m.MetricsDashboard })))
 const KafkaStatus = lazy(() => import('./pages/Kafka/KafkaStatus').then(m => ({ default: m.KafkaStatus })))
-const LogsViewer = lazy(() => import('./pages/Logs/LogsViewer'))
+const LogsViewer = lazy(() => import('./pages/Logs/LogsViewer.tsx').then(m => ({ default: m.LogsViewer })))
 const Settings = lazy(() => import('./pages/Settings/Settings').then(m => ({ default: m.Settings })))
 
 // Компонент загрузки
