@@ -14,12 +14,20 @@ class WebMvcConfig : WebMvcConfigurer {
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         // Раздача статических файлов админки из classpath:/static/admin/
         // Порядок важен: сначала обрабатываем assets, потом остальное
+        
+        // Обработка статических файлов из /admin/assets/
         registry.addResourceHandler("/admin/assets/**")
             .addResourceLocations("classpath:/static/admin/assets/")
             .setCachePeriod(86400) // Кеширование на 24 часа для assets
         
+        // Обработка всех остальных запросов к /admin/ (включая index.html и SPA routing)
+        // Это также обработает статические файлы из корня /admin/, если они там находятся
         registry.addResourceHandler("/admin/**")
-            .addResourceLocations("classpath:/static/admin/")
+            .addResourceLocations(
+                "classpath:/static/admin/",
+                "classpath:/static/admin/assets/js/",
+                "classpath:/static/admin/assets/css/"
+            )
             .setCachePeriod(3600) // Кеширование на 1 час для HTML
             .resourceChain(true)
         

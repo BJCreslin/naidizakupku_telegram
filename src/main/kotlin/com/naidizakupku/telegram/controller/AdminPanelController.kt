@@ -26,17 +26,37 @@ class AdminPanelController {
      * и только если не находит, запрос попадает в этот контроллер
      */
     @GetMapping(
-        value = ["/**"],
-        produces = [MediaType.TEXT_HTML_VALUE]
+        value = ["/**"]
     )
     fun adminPanel(request: HttpServletRequest): ResponseEntity<Resource> {
         val requestPath = request.requestURI.removePrefix("/admin")
         
         // Если путь содержит точку (расширение файла), это статический файл
-        // В этом случае Spring Boot должен был обработать его через ResourceHandler
-        // Если запрос дошел сюда, значит файл не найден, возвращаем index.html для SPA routing
+        // Пытаемся найти файл в разных местах (для совместимости со старыми сборками)
         if (requestPath.contains(".") && !requestPath.endsWith(".html")) {
-            // Это файл с расширением (не HTML), возвращаем 404
+            // Пытаемся найти файл в assets/js/ или assets/css/
+            val fileName = requestPath.substringAfterLast("/")
+            val possiblePaths = listOf(
+                "/static/admin/assets/js/$fileName",
+                "/static/admin/assets/css/$fileName",
+                "/static/admin/$fileName"
+            )
+            
+            for (path in possiblePaths) {
+                val resource = ClassPathResource(path)
+                if (resource.exists()) {
+                    val contentType = when {
+                        fileName.endsWith(".js") -> "application/javascript"
+                        fileName.endsWith(".css") -> "text/css"
+                        else -> MediaType.APPLICATION_OCTET_STREAM_VALUE
+                    }
+                    return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_TYPE, contentType)
+                        .body(resource)
+                }
+            }
+            
+            // Файл не найден, возвращаем 404
             return ResponseEntity.notFound().build()
         }
         

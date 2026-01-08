@@ -25,6 +25,32 @@ server {
         proxy_request_buffering off;
     }
 
+    # Статические файлы админки (assets) проксируются на Spring Boot
+    # ^~ означает, что этот location имеет приоритет над regex location'ами
+    # Должен быть перед общим location для статических файлов
+    location ^~ /admin/assets/ {
+        proxy_pass          http://127.0.0.1:8080/admin/assets/;
+        proxy_set_header    Host $host;
+        proxy_set_header    X-Real-IP $remote_addr;
+        proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Все статические файлы из /admin/ (JS, CSS и т.д.) проксируются на Spring Boot
+    # Этот regex location имеет приоритет над общим regex location для статических файлов
+    # Обрабатывает файлы типа /admin/index-xxx.js, /admin/index-xxx.css
+    location ~* ^/admin/.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$ {
+        proxy_pass          http://127.0.0.1:8080$request_uri;
+        proxy_set_header    Host $host;
+        proxy_set_header    X-Real-IP $remote_addr;
+        proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
     # Админка (SPA) проксируется на Spring Boot
     # Должен быть перед location / для правильного приоритета
     location /admin/ {
