@@ -901,7 +901,11 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
 
 ### Конфигурация кэширования
 - **Провайдер**: Caffeine (in-memory cache)
-- **Общая конфигурация**: TTL 5 минут, максимальный размер 1000 записей
+- **Дефолтный CacheManager**: Основной кэш-менеджер для общих кэшей приложения
+  - **TTL**: 5 минут
+  - **Максимальный размер**: 1000 записей
+  - **Кэшируемые методы**:
+    - `UserCodeService.getOrCreateUserCode()` - кэш `userCodes` (ключ: `telegramUserId`)
 - **Кэш метрик админки**: Отдельный CacheManager (`metricsCacheManager`) для метрик
   - **TTL**: 2 минуты (метрики должны обновляться достаточно часто)
   - **Максимальный размер**: 100 записей
@@ -912,7 +916,7 @@ Telegram Bot API → TelegramBotService (callback) → UserCodeService → AuthR
     - `AdminMetricsService.getTelegramMetrics()` - кэш `telegramMetrics`
     - `AdminMetricsService.getKafkaMetrics()` - кэш `kafkaMetrics`
 - **Включение**: `@EnableCaching` в `TelegramApplication` и `CacheConfig`
-- **Конфигурация**: `CacheConfig.kt` - программная настройка кэша для метрик
+- **Конфигурация**: `CacheConfig.kt` - программная настройка кэша для общих кэшей и метрик
 
 ### Конфигурация Rate Limiting
 - **Библиотека**: Bucket4j
