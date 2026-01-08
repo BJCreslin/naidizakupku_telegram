@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.EnableCaching
 import org.springframework.cache.caffeine.CaffeineCacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import java.util.concurrent.TimeUnit
 
 /**
@@ -21,6 +22,7 @@ class CacheConfig {
      * Максимальный размер: 1000 записей
      */
     @Bean
+    @Primary
     fun cacheManager(): CacheManager {
         val cacheManager = CaffeineCacheManager("userCodes")
         cacheManager.setCaffeine(
