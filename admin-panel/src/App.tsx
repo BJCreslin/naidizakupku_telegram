@@ -29,7 +29,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <AntApp>
-        <BrowserRouter>
+        <BrowserRouter basename="/admin">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
