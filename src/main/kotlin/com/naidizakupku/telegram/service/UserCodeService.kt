@@ -24,7 +24,7 @@ class UserCodeService(
     private val codeGenerationService: CodeGenerationService,
     private val telegramNotificationService: TelegramNotificationService,
     private val kafkaProducerService: KafkaProducerService,
-    @Lazy private val telegramBotExecutor: TelegramBotExecutor,
+    private val telegramOperationService: TelegramOperationService,
     private val metricsService: MetricsService
 ) {
 
@@ -83,7 +83,7 @@ class UserCodeService(
                     
                     // Отправляем уведомление в Telegram с кнопками подтверждения
                     val messageId = telegramNotificationService.sendAuthConfirmationRequest(
-                        telegramBot = telegramBotExecutor,
+                        telegramBot = telegramOperationService,
                         telegramUserId = existingCode.telegramUserId,
                         traceId = traceId,
                         ip = request.ip,
@@ -225,7 +225,7 @@ class UserCodeService(
             authRequestRepository.deleteByTraceId(traceId)
             
             // Удаляем кнопки из Telegram сообщения
-            telegramNotificationService.removeAuthConfirmationButtons(telegramBotExecutor, authRequest.telegramUserId, traceId)
+            telegramNotificationService.removeAuthConfirmationButtons(telegramOperationService, authRequest.telegramUserId, traceId)
             
             logger.info("Вход подтвержден для traceId $traceId")
             true
@@ -264,7 +264,7 @@ class UserCodeService(
             authRequestRepository.deleteByTraceId(traceId)
             
             // Уведомляем пользователя об отзыве
-            telegramNotificationService.sendAuthRevokedMessage(telegramBotExecutor, authRequest.telegramUserId)
+            telegramNotificationService.sendAuthRevokedMessage(telegramOperationService, authRequest.telegramUserId)
             
             logger.info("Вход отозван для traceId $traceId")
             true

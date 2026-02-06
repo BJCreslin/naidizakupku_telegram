@@ -15,7 +15,9 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
-class TelegramNotificationService() {
+class TelegramNotificationService(
+    private val telegramOperationService: TelegramOperationService
+) {
     
     private val logger = LoggerFactory.getLogger(TelegramNotificationService::class.java)
     
@@ -27,7 +29,7 @@ class TelegramNotificationService() {
     
     @CircuitBreaker(name = "telegramApi", fallbackMethod = "sendVerificationRequestFallback")
     fun sendVerificationRequest(
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
@@ -45,7 +47,7 @@ class TelegramNotificationService() {
     
     fun sendVerificationRequestFallback(
         e: Exception,
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         session: VerificationSession,
         browserInfo: UserBrowserInfoDto
     ): Long? {
@@ -53,7 +55,7 @@ class TelegramNotificationService() {
         return null
     }
     
-    fun updateMessageToConfirmed(telegramBot: TelegramBotExecutor, chatId: Long, messageId: Long): Boolean {
+    fun updateMessageToConfirmed(telegramBot: TelegramOperationService, chatId: Long, messageId: Long): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
             chatId = chatId,
@@ -62,7 +64,7 @@ class TelegramNotificationService() {
         )
     }
     
-    fun updateMessageToRevoking(telegramBot: TelegramBotExecutor, chatId: Long, messageId: Long): Boolean {
+    fun updateMessageToRevoking(telegramBot: TelegramOperationService, chatId: Long, messageId: Long): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
             chatId = chatId,
@@ -71,7 +73,7 @@ class TelegramNotificationService() {
         )
     }
     
-    fun sendRevocationConfirmed(telegramBot: TelegramBotExecutor, chatId: Long): Boolean {
+    fun sendRevocationConfirmed(telegramBot: TelegramOperationService, chatId: Long): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
             chatId = chatId,
@@ -85,7 +87,7 @@ class TelegramNotificationService() {
      */
     @CircuitBreaker(name = "telegramApi", fallbackMethod = "sendAuthConfirmationRequestFallback")
     fun sendAuthConfirmationRequest(
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         telegramUserId: Long,
         traceId: UUID,
         ip: String?,
@@ -106,7 +108,7 @@ class TelegramNotificationService() {
     
     fun sendAuthConfirmationRequestFallback(
         e: Exception,
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         telegramUserId: Long,
         traceId: UUID,
         ip: String?,
@@ -121,7 +123,7 @@ class TelegramNotificationService() {
      * Удаляет кнопки из сообщения подтверждения авторизации
      */
     @CircuitBreaker(name = "telegramApi", fallbackMethod = "removeAuthConfirmationButtonsFallback")
-    fun removeAuthConfirmationButtons(telegramBot: TelegramBotExecutor, telegramUserId: Long, traceId: UUID): Boolean {
+    fun removeAuthConfirmationButtons(telegramBot: TelegramOperationService, telegramUserId: Long, traceId: UUID): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
             chatId = telegramUserId,
@@ -133,7 +135,7 @@ class TelegramNotificationService() {
     
     fun removeAuthConfirmationButtonsFallback(
         e: Exception,
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         telegramUserId: Long,
         traceId: UUID
     ): Boolean {
@@ -145,7 +147,7 @@ class TelegramNotificationService() {
      * Отправляет сообщение об отзыве авторизации
      */
     @CircuitBreaker(name = "telegramApi", fallbackMethod = "sendAuthRevokedMessageFallback")
-    fun sendAuthRevokedMessage(telegramBot: TelegramBotExecutor, telegramUserId: Long): Boolean {
+    fun sendAuthRevokedMessage(telegramBot: TelegramOperationService, telegramUserId: Long): Boolean {
         return sendSimpleMessage(
             telegramBot = telegramBot,
             chatId = telegramUserId,
@@ -157,7 +159,7 @@ class TelegramNotificationService() {
     
     fun sendAuthRevokedMessageFallback(
         e: Exception,
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         telegramUserId: Long
     ): Boolean {
         logger.error("Circuit Breaker открыт для Telegram API при отправке сообщения об отзыве: telegramUserId=$telegramUserId", e)
@@ -260,7 +262,7 @@ class TelegramNotificationService() {
      * Общий метод для отправки простого текстового сообщения
      */
     private fun sendSimpleMessage(
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         chatId: Long,
         text: String,
         logMessage: String,
@@ -286,7 +288,7 @@ class TelegramNotificationService() {
      * Общий метод для отправки сообщения с клавиатурой (с поддержкой retry)
      */
     private fun sendMessageWithKeyboard(
-        telegramBot: TelegramBotExecutor,
+        telegramBot: TelegramOperationService,
         message: SendMessage,
         keyboard: InlineKeyboardMarkup,
         successLogMessage: String,

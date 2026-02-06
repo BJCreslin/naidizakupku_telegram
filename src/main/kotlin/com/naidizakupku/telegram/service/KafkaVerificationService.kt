@@ -13,7 +13,7 @@ class KafkaVerificationService(
     private val verificationSessionService: VerificationSessionService,
     private val telegramNotificationService: TelegramNotificationService,
     private val kafkaProducerService: KafkaProducerService,
-    @Lazy private val telegramBotExecutor: TelegramBotExecutor
+    private val telegramOperationService: TelegramOperationService
 ) {
     
     private val logger = LoggerFactory.getLogger(KafkaVerificationService::class.java)
@@ -31,7 +31,7 @@ class KafkaVerificationService(
             
             if (session != null) {
                 // Отправляем сообщение в Telegram
-                val messageId = telegramNotificationService.sendVerificationRequest(telegramBotExecutor, session, request.userBrowserInfo)
+                val messageId = telegramNotificationService.sendVerificationRequest(telegramOperationService, session, request.userBrowserInfo)
                 
                 if (messageId != null) {
                     // Отправляем успешный ответ в Kafka
@@ -88,7 +88,7 @@ class KafkaVerificationService(
             
             if (updated) {
                 // Обновляем сообщение в Telegram
-                telegramNotificationService.updateMessageToConfirmed(telegramBotExecutor, session.telegramUserId, 0) // TODO: сохранять messageId
+                telegramNotificationService.updateMessageToConfirmed(telegramOperationService, session.telegramUserId, 0) // TODO: сохранять messageId
                 logger.info("Верификация подтверждена: correlationId=$correlationId")
                 true
             } else {
@@ -114,7 +114,7 @@ class KafkaVerificationService(
             
             if (updated) {
                 // Обновляем сообщение в Telegram
-                telegramNotificationService.updateMessageToRevoking(telegramBotExecutor, session.telegramUserId, 0) // TODO: сохранять messageId
+                telegramNotificationService.updateMessageToRevoking(telegramOperationService, session.telegramUserId, 0) // TODO: сохранять messageId
                 
                 // Отправляем запрос на отзыв авторизации
                 val revokeCorrelationId = UUID.randomUUID()
@@ -144,7 +144,7 @@ class KafkaVerificationService(
         try {
             if (response.success) {
                 // Отправляем подтверждение отзыва в Telegram
-                telegramNotificationService.sendRevocationConfirmed(telegramBotExecutor, response.telegramUserId)
+                telegramNotificationService.sendRevocationConfirmed(telegramOperationService, response.telegramUserId)
                 logger.info("Отзыв авторизации подтвержден: correlationId=${response.correlationId}")
             } else {
                 logger.warn("Отзыв авторизации не удался: correlationId=${response.correlationId}, message=${response.message}")

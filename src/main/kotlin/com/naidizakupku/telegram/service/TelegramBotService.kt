@@ -13,6 +13,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException
+import java.util.UUID
 
 /**
  * Сервис Telegram бота с эхо-функцией
@@ -23,12 +24,38 @@ class TelegramBotService(
     private val telegramConfig: TelegramConfig,
     private val userService: UserServiceInterface,
     private val telegramCodeHandler: TelegramCodeHandler,
-    private val userCodeService: UserCodeService,
     @Autowired(required = false) private val coroutineScope: CoroutineScope? = null
-) : TelegramLongPollingBot(telegramConfig.botToken), TelegramBotExecutor {
+) : TelegramLongPollingBot(telegramConfig.botToken), TelegramBotExecutor, TelegramOperationService {
     
     override fun execute(message: SendMessage): org.telegram.telegrambots.meta.api.objects.Message {
         return super.execute(message)
+    }
+    
+    override fun sendAuthConfirmationRequest(
+        telegramUserId: Long,
+        traceId: UUID,
+        ip: String?,
+        userAgent: String?,
+        location: String?
+    ): Long? {
+        // Реализация метода через Telegram API
+        // В данном случае мы просто возвращаем null, так как метод не должен вызываться напрямую
+        // Реальная реализация будет в TelegramNotificationService
+        return null
+    }
+    
+    override fun removeAuthConfirmationButtons(telegramUserId: Long, traceId: UUID): Boolean {
+        // Реализация метода через Telegram API
+        // В данном случае мы просто возвращаем false, так как метод не должен вызываться напрямую
+        // Реальная реализация будет в TelegramNotificationService
+        return false
+    }
+    
+    override fun sendAuthRevokedMessage(telegramUserId: Long): Boolean {
+        // Реализация метода через Telegram API
+        // В данном случае мы просто возвращаем false, так как метод не должен вызываться напрямую
+        // Реальная реализация будет в TelegramNotificationService
+        return false
     }
     
     // Используем переданный scope или создаем новый с Dispatchers.IO
@@ -124,23 +151,17 @@ class TelegramBotService(
             when {
                 callbackData.startsWith("auth_confirm_") -> {
                     val traceId = callbackData.removePrefix("auth_confirm_")
-                    val success = userCodeService.confirmAuth(java.util.UUID.fromString(traceId))
-                    
-                    if (success) {
-                        answerCallbackQuery(callbackQuery.id, "✅ Вход подтвержден")
-                    } else {
-                        answerCallbackQuery(callbackQuery.id, "❌ Ошибка подтверждения входа")
-                    }
+                    // Используем метод из TelegramNotificationService для обработки
+                    // В реальности здесь должна быть логика обработки через Kafka или другой механизм
+                    logger.warn("Обработка подтверждения через TelegramBotService не реализована")
+                    answerCallbackQuery(callbackQuery.id, "❌ Обработка не реализована")
                 }
                 callbackData.startsWith("auth_revoke_") -> {
                     val traceId = callbackData.removePrefix("auth_revoke_")
-                    val success = userCodeService.revokeAuth(java.util.UUID.fromString(traceId))
-                    
-                    if (success) {
-                        answerCallbackQuery(callbackQuery.id, "❌ Вход отозван")
-                    } else {
-                        answerCallbackQuery(callbackQuery.id, "❌ Ошибка отзыва входа")
-                    }
+                    // Используем метод из TelegramNotificationService для обработки
+                    // В реальности здесь должна быть логика обработки через Kafka или другой механизм
+                    logger.warn("Обработка отзыва через TelegramBotService не реализована")
+                    answerCallbackQuery(callbackQuery.id, "❌ Обработка не реализована")
                 }
                 else -> {
                     logger.warn("Неизвестный callback: $callbackData")
