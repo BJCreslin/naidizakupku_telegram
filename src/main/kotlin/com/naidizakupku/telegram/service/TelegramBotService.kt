@@ -2,6 +2,7 @@ package com.naidizakupku.telegram.service
 
 import com.naidizakupku.telegram.config.TelegramConfig
 import com.naidizakupku.telegram.handler.TelegramCodeHandler
+import com.naidizakupku.telegram.handler.TelegramLogHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ class TelegramBotService(
     private val telegramConfig: TelegramConfig,
     private val userService: UserServiceInterface,
     private val telegramCodeHandler: TelegramCodeHandler,
+    private val telegramLogHandler: TelegramLogHandler,
     @Autowired(required = false) private val coroutineScope: CoroutineScope? = null
 ) : TelegramLongPollingBot(telegramConfig.botToken), TelegramBotExecutor, TelegramOperationService {
     
@@ -108,9 +110,13 @@ class TelegramBotService(
                             🤖 <b>Доступные команды:</b>
                             
                             /code - Получить код для входа в систему
+                            /log [количество_строк] - Получить лог-файл приложения (по умолчанию 1000 строк)
+                            /loginfo - Получить информацию о лог-файле
                             /help - Показать эту справку
                             
-                            <i>Для получения кода используйте команду /code</i>
+                            <i>Примеры:</i>
+                            <i>/log - получить последние 1000 строк</i>
+                            <i>/log 500 - получить последние 500 строк</i>
                         """.trimIndent()
                         val message = SendMessage()
                         message.chatId = chatId.toString()
@@ -123,6 +129,27 @@ class TelegramBotService(
                         val responseMessage = telegramCodeHandler.handleCodeCommand(update)
                         execute(responseMessage)
                         logger.info("Отправлен код пользователю $userId")
+                    }
+                    text.startsWith("/loginfo") -> {
+                        val responseMessage = telegramLogHandler.handleLogInfoCommand(update)
+                        execute(responseMessage)
+                        logger.info("Отправлена информация о лог-файле пользователю $userId")
+                    }
+                    text.startsWith("/log") -> {
+                        val response = telegramLogHandler.handleLogCommand(update)
+                        when (response) {
+                            is SendMessage -> {
+                                execute(response)
+                                logger.info("Отправлено сообщение о лог-файле пользователю $userId")
+                            }
+                            is org.telegram.telegrambots.meta.api.methods.send.SendDocument -> {
+                                execute(response)
+                                logger.info("Отправлен лог-файл пользователю $userId")
+                            }
+                            else -> {
+                                logger.warn("Неизвестный тип ответа от TelegramLogHandler")
+                            }
+                        }
                     }
                     else -> {
                         // Эхо-функция для остальных сообщений
