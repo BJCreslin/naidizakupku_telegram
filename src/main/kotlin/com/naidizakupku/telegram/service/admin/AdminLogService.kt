@@ -15,7 +15,7 @@ import java.util.regex.Pattern
  */
 @Service
 class AdminLogService(
-    @Value("\${logging.file.name:/app/logs/application.log}") private val logFilePath: String
+    @Value("\${logging.file.name:./logs/application.log}") private val logFilePath: String
 ) {
 
     private val logger = LoggerFactory.getLogger(AdminLogService::class.java)

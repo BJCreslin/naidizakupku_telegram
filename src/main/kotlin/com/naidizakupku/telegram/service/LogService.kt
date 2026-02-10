@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
  */
 @Service
 class LogService(
-    @Value("\${logging.file.name:/app/logs/application.log}")
+    @Value("\${logging.file.name:./logs/application.log}")
     private val logFilePath: String
 ) {
     
