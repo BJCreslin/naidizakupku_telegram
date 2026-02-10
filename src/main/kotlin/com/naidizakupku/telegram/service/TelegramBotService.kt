@@ -132,18 +132,18 @@ class TelegramBotService(
                     }
                     text.startsWith("/loginfo") -> {
                         val responseMessage = telegramLogHandler.handleLogInfoCommand(update)
-                        execute(responseMessage)
+                        execute(responseMessage as SendMessage)
                         logger.info("Отправлена информация о лог-файле пользователю $userId")
                     }
                     text.startsWith("/log") -> {
                         val response = telegramLogHandler.handleLogCommand(update)
                         when (response) {
                             is SendMessage -> {
-                                execute(response)
+                                execute(response as SendMessage)
                                 logger.info("Отправлено сообщение о лог-файле пользователю $userId")
                             }
                             is org.telegram.telegrambots.meta.api.methods.send.SendDocument -> {
-                                execute(response)
+                                execute(response as org.telegram.telegrambots.meta.api.methods.send.SendDocument)
                                 logger.info("Отправлен лог-файл пользователю $userId")
                             }
                             else -> {
