@@ -55,4 +55,4 @@ EXPOSE 8080
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
 
 # Команда запуска приложения
-ENTRYPOINT ["java", "$JAVA_OPTS", "-jar", "app.jar"]
+ENTRYPOINT ["/usr/bin/java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
