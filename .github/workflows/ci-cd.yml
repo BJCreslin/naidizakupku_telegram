@@ -147,7 +147,7 @@ jobs:
             
             # Создаем директорию для логов с правильными правами
             mkdir -p /opt/telegram-app/logs
-            chmod 755 /opt/telegram-app/logs
+            chmod 777 /opt/telegram-app/logs
             
             # Запускаю новый контейнер с правильным подключением к локальной БД
              docker run -d \
