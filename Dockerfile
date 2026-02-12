@@ -42,8 +42,8 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Копируем собранный JAR файл
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Создаем директорию для логов с правильными правами
-RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs && chmod -R 755 /app/logs
+# Создаем директорию для логов
+RUN mkdir -p /app/logs
 
 # Переключаемся на пользователя приложения
 USER appuser
@@ -55,4 +55,4 @@ EXPOSE 8080
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
 
 # Команда запуска приложения
-ENTRYPOINT ["/usr/bin/java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
